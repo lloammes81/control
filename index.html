@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>Gastos Mensuales (Local DB)</title>
+  <style>
+    :root{--bg:#0b1220;--card:#111a2e;--muted:#a7b2cc;--text:#eef3ff;--line:rgba(255,255,255,.10);--accent:#4da3ff;--danger:#ff4d6d;--shadow:0 10px 30px rgba(0,0,0,.35);--r:16px;--mono:ui-monospace,Menlo,Consolas,monospace;--sans:system-ui,Segoe UI,Roboto,Arial}
+    *{box-sizing:border-box} body{margin:0;font-family:var(--sans);color:var(--text);background:var(--bg)}
+    .wrap{max-width:1180px;margin:0 auto;padding:18px}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    h1{margin:0;font-size:22px} .muted{color:var(--muted);font-size:12px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .chip{display:flex;gap:8px;align-items:center;padding:10px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.06)}
+    .chip label{font-size:12px;color:var(--muted)}
+    input,select,button,textarea{padding:10px 11px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--text);outline:none}
+    button{cursor:pointer;transition:.12s ease}
+    button:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
+    button.primary{background:rgba(77,163,255,.22);border-color:rgba(77,163,255,.35)}
+    button.danger{background:rgba(255,77,109,.18);border-color:rgba(255,77,109,.35)}
+    .card{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+    .hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+    .bd{padding:16px}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    @media(max-width:980px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    .kpi{padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.16)}
+    .kpi .label{font-size:12px;color:var(--muted)}
+    .kpi .value{font-size:18px;margin-top:6px;font-family:var(--mono)}
+    .kpi .sub{font-size:12px;margin-top:4px;color:rgba(238,243,255,.75)}
+    form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:680px){form{grid-template-columns:1fr}}
+    .row{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .tableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+    table{width:100%;border-collapse:collapse;min-width:880px}
+    th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+    th{color:var(--muted);position:sticky;top:0;background:rgba(17,26,46,.95)}
+    .mono{font-family:var(--mono)}
+    .actions{display:flex;gap:8px}
+    .pill{display:inline-flex;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.18);font-size:12px}
+    .bars{display:flex;flex-direction:column;gap:10px}
+    .barRow{display:grid;grid-template-columns:140px 1fr 110px;gap:10px;align-items:center}
+    @media(max-width:680px){.barRow{grid-template-columns:110px 1fr 90px}}
+    .bar{height:10px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.22);overflow:hidden}
+    .bar i{display:block;height:100%;width:0%;background:rgba(77,163,255,.65)}
+    .toast{position:fixed;right:16px;bottom:16px;background:rgba(17,26,46,.95);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);display:none;max-width:360px}
+    .toast.show{display:block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Control de Gastos Mensuales (DB Local)</h1>
+        <div class="muted">Guarda en IndexedDB (local), con reportes por mes + backup/import.</div>
+      </div>
+      <div class="toolbar">
+        <div class="chip">
+          <label for="month">Mes</label>
+          <input id="month" type="month">
+        </div>
+        <button id="btnBackup">Backup JSON</button>
+        <button id="btnImport">Importar JSON</button>
+        <button id="btnCSV">Exportar CSV</button>
+        <button class="danger" id="btnReset">Borrar DB</button>
+        <input id="fileImport" type="file" accept="application/json" hidden>
+      </div>
+    </header>
+
+    <div class="card" style="margin-bottom:12px;">
+      <div class="hd">
+        <div class="muted">Resumen del mes</div>
+        <div class="muted">Moneda: <span id="currencyLabel">USD</span></div>
+      </div>
+      <div class="bd">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="label">Total</div>
+            <div class="value" id="kTotal">$0.00</div>
+            <div class="sub" id="kTotalSub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Transacciones</div>
+            <div class="value" id="kCount">0</div>
+            <div class="sub" id="kCountSub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Promedio diario</div>
+            <div class="value" id="kDaily">$0.00</div>
+            <div class="sub">Basado en días del mes</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Top categoría</div>
+            <div class="value" id="kTopCat">—</div>
+            <div class="sub" id="kTopCatSub">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="hd">
+          <div class="muted">Agregar / Editar gasto</div>
+          <div class="muted">ID: <span id="editId">Nuevo</span></div>
+        </div>
+        <div class="bd">
+          <form id="expenseForm">
+            <div>
+              <div class="muted">Fecha</div>
+              <input id="date" type="date" required>
+            </div>
+            <div>
+              <div class="muted">Monto</div>
+              <input id="amount" type="number" step="0.01" min="0" placeholder="Ej: 120.50" required>
+            </div>
+            <div>
+              <div class="muted">Categoría</div>
+              <select id="category" required></select>
+              <div class="muted" style="margin-top:6px;">Nueva categoría (opcional):</div>
+              <input id="newCategory" type="text" placeholder="Ej: Reparaciones" maxlength="40">
+            </div>
+            <div>
+              <div class="muted">Método</div>
+              <select id="method"></select>
+              <div class="muted" style="margin-top:6px;">Moneda</div>
+              <select id="currency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="DOP">DOP</option>
+                <option value="MXN">MXN</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <input id="desc" type="text" placeholder="Descripción (diesel, peajes, seguro...)" style="flex:1;min-width:240px;">
+              <input id="vendor" type="text" placeholder="Proveedor (opcional)" style="width:240px;">
+            </div>
+
+            <div class="row">
+              <button class="primary" type="submit">Guardar</button>
+              <button type="button" id="btnClear">Limpiar</button>
+              <span class="muted" id="formHint">—</span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <div class="muted">Gastos por categoría</div>
+          <div class="muted" id="breakdownHint">—</div>
+        </div>
+        <div class="bd">
+          <div class="bars" id="bars"></div>
+          <div class="muted" style="margin-top:10px;" id="barsTotal">Total: —</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="hd">
+        <div class="muted">Movimientos del mes</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <input id="search" type="text" placeholder="Buscar (cat/desc/proveedor/método)" style="min-width:260px;">
+          <button id="btnToday">Ir a hoy</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Proveedor</th>
+                <th>Método</th>
+                <th class="mono">Monto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="muted" style="margin-top:10px;">
+          Registros visibles: <span id="visibleCount">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ===========================
+   IndexedDB (DB local real)
+   =========================== */
+const DB_NAME = "fabre_gastos_db";
+const DB_VER  = 1;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+
+      // settings (key-value)
+      if (!db.objectStoreNames.contains("settings")) {
+        db.createObjectStore("settings"); // key: string, value: any
+      }
+
+      // categories
+      if (!db.objectStoreNames.contains("categories")) {
+        const st = db.createObjectStore("categories", { keyPath: "name" });
+        st.createIndex("by_name", "name", { unique: true });
+      }
+
+      // expenses
+      if (!db.objectStoreNames.contains("expenses")) {
+        const st = db.createObjectStore("expenses", { keyPath: "id" });
+        st.createIndex("by_month", "month", { unique: false }); // month = 'YYYY-MM'
+        st.createIndex("by_date", "date", { unique: false });
+        st.createIndex("by_category", "category", { unique: false });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function tx(storeName, mode, fn) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(storeName, mode);
+    const store = t.objectStore(storeName);
+    const out = fn(store);
+    t.oncomplete = () => resolve(out);
+    t.onerror = () => reject(t.error);
+  });
+}
+
+function id() {
+  return (crypto.randomUUID ? crypto.randomUUID() : ("id_" + Math.random().toString(16).slice(2) + "_" + Date.now()));
+}
+
+function monthFromDate(isoDate){ return (isoDate || "").slice(0,7); }
+
+async function getSetting(key, fallback) {
+  try {
+    const db = await openDB();
+    return await new Promise((resolve,reject)=>{
+      const t = db.transaction("settings","readonly");
+      const s = t.objectStore("settings");
+      const r = s.get(key);
+      r.onsuccess = ()=> resolve(r.result ?? fallback);
+      r.onerror = ()=> reject(r.error);
+    });
+  } catch { return fallback; }
+}
+
+async function setSetting(key, value) {
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const t = db.transaction("settings","readwrite");
+    const s = t.objectStore("settings");
+    const r = s.put(value, key);
+    r.onsuccess = ()=> resolve(true);
+    r.onerror = ()=> reject(r.error);
+  });
+}
+
+/* ===========================
+   Default seed
+   =========================== */
+const DEFAULT_CATEGORIES = ["Comida","Combustible","Mantenimiento","Seguro","Peajes","Teléfono","Renta","Impuestos","Herramientas","Otros"];
+const DEFAULT_METHODS = ["Cash","Card","Transfer","Zelle","Check"];
+
+async function ensureSeed() {
+  const cur = await getSetting("currency", null);
+  if (!cur) await setSetting("currency", "USD");
+
+  const methods = await getSetting("methods", null);
+  if (!methods) await setSetting("methods", DEFAULT_METHODS);
+
+  // if no categories, insert defaults
+  const hasAny = await tx("categories","readonly",(s)=> {
+    return new Promise((resolve,reject)=>{
+      const r = s.count();
+      r.onsuccess = ()=> resolve(r.result > 0);
+      r.onerror = ()=> reject(r.error);
+    });
+  });
+  if (!hasAny) {
+    for (const c of DEFAULT_CATEGORIES) {
+      await tx("categories","readwrite",(s)=> s.put({ name: c }));
+    }
+  }
+}
+
+/* ===========================
+   Queries
+   =========================== */
+async function listCategories() {
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const t = db.transaction("categories","readonly");
+    const s = t.objectStore("categories");
+    const out = [];
+    const r = s.openCursor();
+    r.onsuccess = ()=> {
+      const cur = r.result;
+      if (!cur) return resolve(out.map(x=>x.name).sort((a,b)=>a.localeCompare(b)));
+      out.push(cur.value);
+      cur.continue();
+    };
+    r.onerror = ()=> reject(r.error);
+  });
+}
+
+async function addCategory(name) {
+  name = (name || "").trim();
+  if (!name) return;
+  await tx("categories","readwrite",(s)=> s.put({ name }));
+}
+
+async function listExpensesByMonth(month) {
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const t = db.transaction("expenses","readonly");
+    const s = t.objectStore("expenses");
+    const idx = s.index("by_month");
+    const out = [];
+    const range = IDBKeyRange.only(month);
+    const r = idx.openCursor(range);
+    r.onsuccess = ()=> {
+      const cur = r.result;
+      if (!cur) return resolve(out.sort((a,b)=> (a.date > b.date ? -1 : 1)));
+      out.push(cur.value);
+      cur.continue();
+    };
+    r.onerror = ()=> reject(r.error);
+  });
+}
+
+async function upsertExpense(exp) {
+  await tx("expenses","readwrite",(s)=> s.put(exp));
+}
+
+async function deleteExpense(expId) {
+  await tx("expenses","readwrite",(s)=> s.delete(expId));
+}
+
+async function wipeDB() {
+  const ok = await new Promise((resolve)=>{
+    const req = indexedDB.deleteDatabase(DB_NAME);
+    req.onsuccess = ()=> resolve(true);
+    req.onerror = ()=> resolve(false);
+    req.onblocked = ()=> resolve(false);
+  });
+  return ok;
+}
+
+/* ===========================
+   UI helpers
+   =========================== */
+const $ = (id)=>document.getElementById(id);
+const toast = (m)=>{ const t=$("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2200); };
+
+function currentMonthValue() {
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+function todayISO() {
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function daysInMonth(yyyyMm) {
+  const [y,m]=yyyyMm.split("-").map(Number);
+  return new Date(y,m,0).getDate();
+}
+function fmtMoney(value, cur) {
+  try { return new Intl.NumberFormat("en-US",{style:"currency",currency:cur}).format(value); }
+  catch { return "$"+Number(value||0).toFixed(2); }
+}
+function escapeHtml(str){
+  return (str??"").toString()
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+function downloadFile(filename, content, mime="application/octet-stream"){
+  const blob = new Blob([content],{type:mime});
+  const url = URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ===========================
+   App state + render
+   =========================== */
+let editingId = null;
+let cache = { categories: [], expenses: [], currency: "USD", methods: DEFAULT_METHODS };
+
+async function rebuildSelects() {
+  cache.categories = await listCategories();
+  cache.methods = await getSetting("methods", DEFAULT_METHODS);
+
+  const selCat = $("category");
+  selCat.innerHTML = "";
+  cache.categories.forEach(c=>{
+    const o=document.createElement("option");
+    o.value=c; o.textContent=c;
+    selCat.appendChild(o);
+  });
+
+  const selMethod = $("method");
+  selMethod.innerHTML = "";
+  cache.methods.forEach(m=>{
+    const o=document.createElement("option");
+    o.value=m; o.textContent=m;
+    selMethod.appendChild(o);
+  });
+}
+
+function render() {
+  const month = $("month").value;
+  const q = ($("search").value||"").trim().toLowerCase();
+  const list = cache.expenses;
+
+  const filtered = q ? list.filter(e =>
+    (e.category||"").toLowerCase().includes(q) ||
+    (e.desc||"").toLowerCase().includes(q) ||
+    (e.vendor||"").toLowerCase().includes(q) ||
+    (e.method||"").toLowerCase().includes(q)
+  ) : list;
+
+  const total = list.reduce((s,e)=>s+Number(e.amount||0),0);
+  const count = list.length;
+  const days = daysInMonth(month);
+  const daily = days ? total/days : 0;
+
+  $("currencyLabel").textContent = cache.currency;
+  $("kTotal").textContent = fmtMoney(total, cache.currency);
+  $("kTotalSub").textContent = `${days} días en el mes`;
+  $("kCount").textContent = String(count);
+  $("kCountSub").textContent = count ? `Promedio: ${fmtMoney(total/count, cache.currency)} por gasto` : "—";
+  $("kDaily").textContent = fmtMoney(daily, cache.currency);
+
+  // breakdown
+  const byCat = {};
+  list.forEach(e=>{
+    const c = e.category || "Sin categoría";
+    byCat[c]=(byCat[c]||0)+Number(e.amount||0);
+  });
+  const entries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  $("breakdownHint").textContent = entries.length ? `${entries.length} categorías` : "Sin datos";
+  $("barsTotal").textContent = "Total: " + fmtMoney(total, cache.currency);
+
+  const bars=$("bars"); bars.innerHTML="";
+  const maxVal = entries.length ? entries[0][1] : 0;
+  entries.forEach(([cat,val])=>{
+    const row=document.createElement("div");
+    row.className="barRow";
+    row.innerHTML = `
+      <div title="${escapeHtml(cat)}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(cat)}</div>
+      <div class="bar"><i style="width:${maxVal?(val/maxVal*100).toFixed(1):0}%"></i></div>
+      <div class="mono" style="text-align:right;color:rgba(238,243,255,.85)">${fmtMoney(val, cache.currency)}</div>
+    `;
+    bars.appendChild(row);
+  });
+
+  // table
+  const tb=$("tbody"); tb.innerHTML="";
+  filtered.sort((a,b)=> (a.date>b.date ? -1 : 1)).forEach(e=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(e.date)}</td>
+      <td><span class="pill">${escapeHtml(e.category)}</span></td>
+      <td>${escapeHtml(e.desc||"")}</td>
+      <td>${escapeHtml(e.vendor||"")}</td>
+      <td><span class="pill">${escapeHtml(e.method||"")}</span></td>
+      <td class="mono">${fmtMoney(Number(e.amount||0), cache.currency)}</td>
+      <td>
+        <div class="actions">
+          <button data-edit="${e.id}">Editar</button>
+          <button class="danger" data-del="${e.id}">Borrar</button>
+        </div>
+      </td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  $("visibleCount").textContent = String(filtered.length);
+
+  tb.querySelectorAll("button[data-edit]").forEach(b=> b.onclick=()=>beginEdit(b.getAttribute("data-edit")));
+  tb.querySelectorAll("button[data-del]").forEach(b=> b.onclick=async ()=>{
+    const id = b.getAttribute("data-del");
+    if (!confirm("¿Borrar este gasto?")) return;
+    await deleteExpense(id);
+    toast("Gasto borrado");
+    await refresh();
+  });
+}
+
+function beginEdit(id) {
+  const e = cache.expenses.find(x=>x.id===id);
+  if (!e) return;
+  editingId=id;
+  $("editId").textContent=id;
+  $("date").value=e.date;
+  $("amount").value=e.amount;
+  $("category").value=e.category;
+  $("method").value=e.method;
+  $("desc").value=e.desc||"";
+  $("vendor").value=e.vendor||"";
+  $("formHint").textContent="Editando. Guarda para aplicar cambios.";
+  toast("Modo edición");
+}
+
+function clearForm() {
+  editingId=null;
+  $("editId").textContent="Nuevo";
+  $("date").value=todayISO();
+  $("amount").value="";
+  $("desc").value="";
+  $("vendor").value="";
+  $("newCategory").value="";
+  $("formHint").textContent="—";
+}
+
+async function refresh() {
+  cache.currency = await getSetting("currency","USD");
+  $("currency").value = cache.currency;
+
+  const month = $("month").value;
+  cache.expenses = await listExpensesByMonth(month);
+  render();
+}
+
+/* ===========================
+   Events
+   =========================== */
+$("month").value = currentMonthValue();
+$("date").value = todayISO();
+
+$("btnToday").onclick=async ()=>{
+  $("month").value=currentMonthValue();
+  $("date").value=todayISO();
+  await refresh();
+};
+
+$("search").oninput=()=>render();
+
+$("currency").onchange=async ()=>{
+  cache.currency = $("currency").value;
+  await setSetting("currency", cache.currency);
+  toast("Moneda actualizada");
+  render();
+};
+
+$("month").onchange=async ()=>{
+  const m = $("month").value;
+  $("date").value = m ? `${m}-01` : todayISO();
+  await refresh();
+};
+
+$("btnClear").onclick=()=>{ clearForm(); toast("Formulario limpio"); };
+
+$("expenseForm").onsubmit = async (ev)=>{
+  ev.preventDefault();
+
+  const date = $("date").value;
+  const amount = Number($("amount").value);
+  if (!date) return toast("Pon una fecha");
+  if (!Number.isFinite(amount) || amount<=0) return toast("Monto inválido");
+
+  const month = monthFromDate(date);
+  const selectedMonth = $("month").value;
+  if (month !== selectedMonth) {
+    if (!confirm("La fecha no coincide con el mes seleccionado. ¿Guardar igual?")) return;
+  }
+
+  const nc = ($("newCategory").value||"").trim();
+  if (nc) {
+    await addCategory(nc);
+    await rebuildSelects();
+    $("category").value = nc;
+    $("newCategory").value = "";
+    toast("Categoría creada");
+  }
+
+  const exp = {
+    id: editingId || id(),
+    date,
+    month: monthFromDate(date),
+    amount: Number(amount.toFixed(2)),
+    category: $("category").value,
+    method: $("method").value,
+    desc: ($("desc").value||"").trim(),
+    vendor: ($("vendor").value||"").trim()
+  };
+
+  await upsertExpense(exp);
+  toast(editingId ? "Actualizado" : "Guardado");
+  clearForm();
+  await refresh();
+};
+
+// Backup JSON
+$("btnBackup").onclick = async ()=>{
+  const payload = {
+    meta: { app:"fabre_gastos", version:1, exported_at: new Date().toISOString() },
+    settings: {
+      currency: await getSetting("currency","USD"),
+      methods: await getSetting("methods", DEFAULT_METHODS)
+    },
+    categories: await listCategories(),
+    expenses: await tx("expenses","readonly",(s)=>{
+      return new Promise((resolve,reject)=>{
+        const out=[];
+        const r=s.openCursor();
+        r.onsuccess=()=>{ const c=r.result; if(!c) return resolve(out); out.push(c.value); c.continue(); };
+        r.onerror=()=>reject(r.error);
+      });
+    })
+  };
+  downloadFile(`backup_gastos_${$("month").value}.json`, JSON.stringify(payload,null,2), "application/json");
+  toast("Backup descargado");
+};
+
+// Import JSON
+const fileImport = $("fileImport");
+$("btnImport").onclick=()=>fileImport.click();
+fileImport.onchange = async ()=>{
+  const f = fileImport.files?.[0];
+  if (!f) return;
+  try{
+    const text = await f.text();
+    const data = JSON.parse(text);
+
+    if (!data || typeof data !== "object" || !Array.isArray(data.expenses)) {
+      toast("JSON inválido");
+      return;
+    }
+
+    // settings
+    if (data.settings?.currency) await setSetting("currency", data.settings.currency);
+    if (Array.isArray(data.settings?.methods)) await setSetting("methods", data.settings.methods);
+
+    // categories
+    if (Array.isArray(data.categories)) {
+      for (const c of data.categories) await addCategory(String(c));
+    }
+
+    // expenses
+    for (const e of data.expenses) {
+      if (!e.id || !e.date) continue;
+      e.month = e.month || monthFromDate(e.date);
+      await upsertExpense(e);
+    }
+
+    await rebuildSelects();
+    await refresh();
+    toast("Importación completada");
+  } catch(e){
+    console.error(e);
+    toast("Error importando JSON");
+  } finally {
+    fileImport.value="";
+  }
+};
+
+// Export CSV (mes seleccionado)
+$("btnCSV").onclick = ()=>{
+  const month = $("month").value;
+  const headers = ["date","category","desc","vendor","method","amount","currency"];
+  const rows = [headers.join(",")];
+  const cur = cache.currency;
+
+  const items = cache.expenses.slice().sort((a,b)=>a.date>b.date?1:-1);
+  for (const e of items) {
+    rows.push([
+      e.date,
+      `"${(e.category||"").replaceAll('"','""')}"`,
+      `"${(e.desc||"").replaceAll('"','""')}"`,
+      `"${(e.vendor||"").replaceAll('"','""')}"`,
+      `"${(e.method||"").replaceAll('"','""')}"`,
+      Number(e.amount||0).toFixed(2),
+      cur
+    ].join(","));
+  }
+  downloadFile(`gastos_${month}.csv`, rows.join("\n"), "text/csv");
+  toast("CSV exportado");
+};
+
+// Reset DB
+$("btnReset").onclick = async ()=>{
+  if (!confirm("¿Borrar TODA la base local (IndexedDB) de este dispositivo?")) return;
+  const ok = await wipeDB();
+  if (!ok) return toast("No se pudo borrar (DB en uso). Cierra otras pestañas y prueba.");
+  toast("DB borrada");
+  location.reload();
+};
+
+/* ===========================
+   Boot
+   =========================== */
+(async ()=>{
+  await ensureSeed();
+  await rebuildSelects();
+  cache.currency = await getSetting("currency","USD");
+  $("currency").value = cache.currency;
+  await refresh();
+})();
+</script>
+</body>
+</html>
+
