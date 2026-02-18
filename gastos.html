@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>Control de Gastos Mensuales</title>
+
+  <style>
+    :root{
+      --bg:#0b1220; --card:#111a2e; --muted:#a7b2cc; --text:#eef3ff;
+      --line:rgba(255,255,255,.10); --accent:#4da3ff; --danger:#ff4d6d; --ok:#2ee59d;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:var(--sans); color:var(--text); background: radial-gradient(1200px 600px at 20% -10%, rgba(77,163,255,.25), transparent 60%),
+              radial-gradient(900px 500px at 100% 0%, rgba(46,229,157,.16), transparent 55%),
+              var(--bg);
+    }
+    a{color:var(--accent)}
+    .wrap{max-width:1180px; margin:0 auto; padding:22px}
+    header{
+      display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .title h1{margin:0; font-size:26px; letter-spacing:.2px}
+    .title p{margin:6px 0 0; color:var(--muted); font-size:13px}
+    .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .chip{
+      display:flex; gap:10px; align-items:center; padding:10px 12px; background:rgba(255,255,255,.06);
+      border:1px solid var(--line); border-radius:999px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+    }
+    .chip label{font-size:12px; color:var(--muted)}
+    .chip input[type="month"]{
+      background:transparent; color:var(--text); border:0; outline:none; font-family:var(--mono);
+    }
+    .btn{
+      border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--text);
+      padding:10px 12px; border-radius:12px; cursor:pointer; transition:.15s ease;
+    }
+    .btn:hover{transform:translateY(-1px); background:rgba(255,255,255,.10)}
+    .btn.primary{background:rgba(77,163,255,.22); border-color:rgba(77,163,255,.35)}
+    .btn.primary:hover{background:rgba(77,163,255,.30)}
+    .btn.danger{background:rgba(255,77,109,.18); border-color:rgba(255,77,109,.35)}
+    .btn.ok{background:rgba(46,229,157,.16); border-color:rgba(46,229,157,.32)}
+    .btn:active{transform:translateY(0)}
+    .grid{
+      display:grid; grid-template-columns: 1.1fr .9fr; gap:14px;
+    }
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom:1px solid var(--line);
+    }
+    .card .hd h2{margin:0; font-size:14px; letter-spacing:.3px; text-transform:uppercase; color:var(--muted)}
+    .card .bd{padding:16px}
+
+    .kpis{display:grid; grid-template-columns: repeat(4, 1fr); gap:10px}
+    @media (max-width:980px){ .kpis{grid-template-columns: repeat(2, 1fr);} }
+    .kpi{
+      padding:12px; border:1px solid var(--line); border-radius:14px;
+      background: rgba(0,0,0,.15);
+    }
+    .kpi .label{font-size:12px; color:var(--muted)}
+    .kpi .value{font-size:18px; margin-top:6px; font-family:var(--mono)}
+    .kpi .sub{font-size:12px; margin-top:4px; color:rgba(238,243,255,.75)}
+
+    form{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    @media (max-width:680px){ form{grid-template-columns:1fr} }
+    .field{display:flex; flex-direction:column; gap:6px}
+    .field label{font-size:12px; color:var(--muted)}
+    .field input, .field select, .field textarea{
+      padding:10px 11px; border-radius:12px; border:1px solid var(--line);
+      background:rgba(0,0,0,.20); color:var(--text); outline:none;
+    }
+    .field textarea{min-height:42px; resize:vertical}
+    .row{grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .hint{color:var(--muted); font-size:12px}
+
+    .tableWrap{overflow:auto}
+    table{width:100%; border-collapse:collapse; min-width:820px}
+    th,td{padding:10px 10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px}
+    th{color:var(--muted); font-weight:600; position:sticky; top:0; background:rgba(17,26,46,.95); backdrop-filter: blur(10px)}
+    td.mono{font-family:var(--mono)}
+    .actions{display:flex; gap:8px}
+    .pill{
+      display:inline-flex; padding:4px 10px; border-radius:999px; border:1px solid var(--line);
+      background: rgba(0,0,0,.18); color:rgba(238,243,255,.88); font-size:12px;
+    }
+
+    .bars{display:flex; flex-direction:column; gap:10px}
+    .barRow{display:grid; grid-template-columns: 140px 1fr 110px; gap:10px; align-items:center}
+    @media (max-width:680px){ .barRow{grid-template-columns: 110px 1fr 90px} }
+    .barLabel{color:rgba(238,243,255,.9); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .bar{
+      height:10px; border-radius:999px; border:1px solid var(--line);
+      background: rgba(0,0,0,.22); overflow:hidden;
+    }
+    .bar > i{display:block; height:100%; width:0%; background: rgba(77,163,255,.65)}
+    .barVal{font-family:var(--mono); color:rgba(238,243,255,.85); font-size:12px; text-align:right}
+
+    .footerRow{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
+      color:var(--muted); font-size:12px;
+    }
+    .small{font-size:12px; color:var(--muted)}
+    .search{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    .search input{
+      padding:10px 11px; border-radius:12px; border:1px solid var(--line);
+      background:rgba(0,0,0,.20); color:var(--text); outline:none; min-width:260px;
+    }
+    .toast{
+      position:fixed; right:18px; bottom:18px; background:rgba(17,26,46,.95);
+      border:1px solid var(--line); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow);
+      color:rgba(238,243,255,.92); font-size:13px; display:none; max-width:360px;
+    }
+    .toast.show{display:block; animation: pop .18s ease-out}
+    @keyframes pop{from{transform:translateY(6px); opacity:.0} to{transform:translateY(0); opacity:1}}
+    .muted{color:var(--muted)}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Control de Gastos Mensuales</h1>
+        <p>Guarda tus gastos por mes, categorías y reportes. (Datos se guardan en este navegador).</p>
+      </div>
+
+      <div class="toolbar">
+        <div class="chip">
+          <label for="month">Mes</label>
+          <input id="month" type="month">
+        </div>
+        <button class="btn ok" id="btnBackup">Backup JSON</button>
+        <button class="btn" id="btnImport">Importar JSON</button>
+        <button class="btn" id="btnCSV">Exportar CSV</button>
+        <button class="btn danger" id="btnReset">Borrar datos</button>
+        <input id="fileImport" type="file" accept="application/json" hidden>
+      </div>
+    </header>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="hd">
+        <h2>Resumen del mes</h2>
+        <div class="small"><span class="muted">Moneda:</span> <span id="currencyLabel">USD</span></div>
+      </div>
+      <div class="bd">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="label">Total Gastos</div>
+            <div class="value" id="kTotal">$0.00</div>
+            <div class="sub" id="kTotalSub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Transacciones</div>
+            <div class="value" id="kCount">0</div>
+            <div class="sub" id="kCountSub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Promedio Diario</div>
+            <div class="value" id="kDaily">$0.00</div>
+            <div class="sub">Basado en días del mes</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Top Categoría</div>
+            <div class="value" id="kTopCat">—</div>
+            <div class="sub" id="kTopCatSub">—</div>
+          </div>
+        </div>
+
+        <div class="footerRow">
+          <div>
+            <span class="muted">Tip:</span> Puedes usar esto para tu contabilidad. Exporta CSV y lo abres en Excel.
+          </div>
+          <div class="small">
+            <span class="muted">Guardado local:</span> <span id="saveState">OK</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Form -->
+      <div class="card">
+        <div class="hd">
+          <h2>Agregar / Editar gasto</h2>
+          <div class="small"><span class="muted">ID:</span> <span id="editId">Nuevo</span></div>
+        </div>
+        <div class="bd">
+          <form id="expenseForm">
+            <div class="field">
+              <label for="date">Fecha</label>
+              <input id="date" type="date" required>
+            </div>
+
+            <div class="field">
+              <label for="amount">Monto</label>
+              <input id="amount" type="number" step="0.01" min="0" placeholder="Ej: 120.50" required>
+            </div>
+
+            <div class="field">
+              <label for="category">Categoría</label>
+              <select id="category" required></select>
+              <div class="hint">Puedes crear una nueva categoría abajo.</div>
+            </div>
+
+            <div class="field">
+              <label for="method">Método de pago</label>
+              <select id="method"></select>
+            </div>
+
+            <div class="field row">
+              <div class="field" style="flex:1; min-width:260px;">
+                <label for="desc">Descripción</label>
+                <input id="desc" type="text" placeholder="Ej: Diesel / Walmart / Peajes / Seguro..." maxlength="120">
+              </div>
+              <div class="field" style="width:220px;">
+                <label for="vendor">Proveedor (opcional)</label>
+                <input id="vendor" type="text" placeholder="Ej: Shell, SunPass" maxlength="80">
+              </div>
+            </div>
+
+            <div class="field row">
+              <div class="field" style="flex:1; min-width:260px;">
+                <label for="newCategory">Nueva categoría (opcional)</label>
+                <input id="newCategory" type="text" placeholder="Ej: Reparaciones" maxlength="40">
+              </div>
+              <div class="field" style="width:220px;">
+                <label for="currency">Moneda</label>
+                <select id="currency">
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="DOP">DOP</option>
+                  <option value="MXN">MXN</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <button class="btn primary" type="submit" id="btnSave">Guardar gasto</button>
+              <button class="btn" type="button" id="btnClear">Limpiar</button>
+              <span class="hint" id="formHint">—</span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Breakdown -->
+      <div class="card">
+        <div class="hd">
+          <h2>Gastos por categoría</h2>
+          <div class="small muted" id="breakdownHint">—</div>
+        </div>
+        <div class="bd">
+          <div class="bars" id="bars"></div>
+          <div class="footerRow">
+            <div class="small muted">* Calculado solo para el mes seleccionado.</div>
+            <div class="small muted" id="barsTotal">Total: —</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card" style="margin-top:14px;">
+      <div class="hd">
+        <h2>Movimientos del mes</h2>
+        <div class="search">
+          <input id="search" type="text" placeholder="Buscar (categoría, descripción, proveedor, método)">
+          <button class="btn" id="btnToday">Ir a hoy</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Proveedor</th>
+                <th>Método</th>
+                <th class="mono">Monto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="footerRow">
+          <div><span class="muted">Registros visibles:</span> <span id="visibleCount">0</span></div>
+          <div class="small muted">Consejo: Exporta CSV para reportes en Excel.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // -----------------------------
+    // CONFIG / STORAGE
+    // -----------------------------
+    const STORAGE_KEY = "gastos_mensuales_v1";
+
+    const defaultData = {
+      currency: "USD",
+      categories: [
+        "Comida", "Combustible", "Mantenimiento", "Seguro", "Peajes",
+        "Teléfono", "Renta", "Impuestos", "Herramientas", "Otros"
+      ],
+      methods: ["Cash", "Card", "Transfer", "Zelle", "Check"],
+      expenses: []
+    };
+
+    function uid() {
+      if (window.crypto?.randomUUID) return crypto.randomUUID();
+      return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now();
+    }
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(defaultData);
+        const parsed = JSON.parse(raw);
+        // merge básico por si agregamos campos en el futuro
+        return {
+          ...structuredClone(defaultData),
+          ...parsed,
+          categories: Array.isArray(parsed.categories) ? parsed.categories : structuredClone(defaultData.categories),
+          methods: Array.isArray(parsed.methods) ? parsed.methods : structuredClone(defaultData.methods),
+          expenses: Array.isArray(parsed.expenses) ? parsed.expenses : []
+        };
+      } catch {
+        return structuredClone(defaultData);
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      setSaveState("OK");
+    }
+
+    function setSaveState(msg) {
+      document.getElementById("saveState").textContent = msg;
+    }
+
+    // -----------------------------
+    // UI HELPERS
+    // -----------------------------
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    function fmtMoney(value) {
+      const cur = db.currency || "USD";
+      try {
+        return new Intl.NumberFormat("en-US", { style: "currency", currency: cur }).format(value);
+      } catch {
+        return "$" + Number(value || 0).toFixed(2);
+      }
+    }
+
+    function daysInMonth(yyyyMm) {
+      const [y, m] = yyyyMm.split("-").map(Number);
+      return new Date(y, m, 0).getDate();
+    }
+
+    function currentMonthValue() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}`;
+    }
+
+    function todayISO() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function monthFromDate(isoDate) {
+      // isoDate: YYYY-MM-DD
+      return isoDate.slice(0, 7);
+    }
+
+    function escapeHtml(str) {
+      return (str ?? "").toString()
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // -----------------------------
+    // APP STATE
+    // -----------------------------
+    let db = loadData();
+    let editingId = null;
+
+    // -----------------------------
+    // INIT UI
+    // -----------------------------
+    const elMonth = document.getElementById("month");
+    const elDate = document.getElementById("date");
+    const elAmount = document.getElementById("amount");
+    const elCategory = document.getElementById("category");
+    const elMethod = document.getElementById("method");
+    const elDesc = document.getElementById("desc");
+    const elVendor = document.getElementById("vendor");
+    const elNewCategory = document.getElementById("newCategory");
+    const elCurrency = document.getElementById("currency");
+    const elCurrencyLabel = document.getElementById("currencyLabel");
+    const elEditId = document.getElementById("editId");
+    const elFormHint = document.getElementById("formHint");
+    const elSearch = document.getElementById("search");
+
+    elMonth.value = currentMonthValue();
+    elDate.value = todayISO();
+    elCurrency.value = db.currency || "USD";
+    elCurrencyLabel.textContent = db.currency || "USD";
+
+    function rebuildSelects() {
+      // categories
+      elCategory.innerHTML = "";
+      const cats = [...new Set(db.categories.map(c => c.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+      db.categories = cats;
+      for (const c of cats) {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        elCategory.appendChild(opt);
+      }
+
+      // methods
+      elMethod.innerHTML = "";
+      for (const m of db.methods) {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        elMethod.appendChild(opt);
+      }
+    }
+
+    rebuildSelects();
+
+    // -----------------------------
+    // DATA OPS
+    // -----------------------------
+    function getMonthExpenses(yyyyMm) {
+      return db.expenses.filter(e => monthFromDate(e.date) === yyyyMm);
+    }
+
+    function upsertExpense(exp) {
+      const idx = db.expenses.findIndex(x => x.id === exp.id);
+      if (idx >= 0) db.expenses[idx] = exp;
+      else db.expenses.push(exp);
+      saveData();
+    }
+
+    function deleteExpense(id) {
+      db.expenses = db.expenses.filter(e => e.id !== id);
+      saveData();
+    }
+
+    // -----------------------------
+    // RENDER
+    // -----------------------------
+    function render() {
+      elCurrencyLabel.textContent = db.currency || "USD";
+      const month = elMonth.value;
+      const q = (elSearch.value || "").trim().toLowerCase();
+
+      const monthExpenses = getMonthExpenses(month);
+      const filtered = q
+        ? monthExpenses.filter(e => (
+            (e.category || "").toLowerCase().includes(q) ||
+            (e.desc || "").toLowerCase().includes(q) ||
+            (e.vendor || "").toLowerCase().includes(q) ||
+            (e.method || "").toLowerCase().includes(q)
+          ))
+        : monthExpenses;
+
+      // KPI
+      const total = monthExpenses.reduce((s,e)=>s + Number(e.amount||0), 0);
+      const count = monthExpenses.length;
+      const days = daysInMonth(month);
+      const daily = days ? total / days : 0;
+
+      document.getElementById("kTotal").textContent = fmtMoney(total);
+      document.getElementById("kTotalSub").textContent = `${days} días en el mes`;
+      document.getElementById("kCount").textContent = String(count);
+      document.getElementById("kCountSub").textContent = count ? `Promedio: ${fmtMoney(total / count)} por gasto` : "—";
+      document.getElementById("kDaily").textContent = fmtMoney(daily);
+
+      // Top category
+      const byCat = {};
+      for (const e of monthExpenses) {
+        const c = e.category || "Sin categoría";
+        byCat[c] = (byCat[c] || 0) + Number(e.amount || 0);
+      }
+      const top = Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+      document.getElementById("kTopCat").textContent = top ? top[0] : "—";
+      document.getElementById("kTopCatSub").textContent = top ? fmtMoney(top[1]) : "—";
+
+      // Bars
+      const bars = document.getElementById("bars");
+      bars.innerHTML = "";
+      const entries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+      document.getElementById("breakdownHint").textContent = entries.length ? `${entries.length} categorías` : "Sin datos";
+      document.getElementById("barsTotal").textContent = "Total: " + fmtMoney(total);
+
+      const maxVal = entries.length ? entries[0][1] : 0;
+      for (const [cat, val] of entries) {
+        const row = document.createElement("div");
+        row.className = "barRow";
+        row.innerHTML = `
+          <div class="barLabel" title="${escapeHtml(cat)}">${escapeHtml(cat)}</div>
+          <div class="bar"><i style="width:${maxVal ? (val/maxVal*100).toFixed(1) : 0}%"></i></div>
+          <div class="barVal">${fmtMoney(val)}</div>
+        `;
+        bars.appendChild(row);
+      }
+
+      // Table
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+
+      const sorted = filtered.slice().sort((a,b)=> (a.date > b.date ? -1 : 1));
+      for (const e of sorted) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="mono">${escapeHtml(e.date)}</td>
+          <td><span class="pill">${escapeHtml(e.category)}</span></td>
+          <td>${escapeHtml(e.desc || "")}</td>
+          <td>${escapeHtml(e.vendor || "")}</td>
+          <td><span class="pill">${escapeHtml(e.method || "")}</span></td>
+          <td class="mono">${fmtMoney(Number(e.amount||0))}</td>
+          <td>
+            <div class="actions">
+              <button class="btn" data-edit="${e.id}">Editar</button>
+              <button class="btn danger" data-del="${e.id}">Borrar</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      document.getElementById("visibleCount").textContent = String(sorted.length);
+
+      // Bind buttons
+      tbody.querySelectorAll("button[data-edit]").forEach(btn=>{
+        btn.addEventListener("click", () => beginEdit(btn.getAttribute("data-edit")));
+      });
+      tbody.querySelectorAll("button[data-del]").forEach(btn=>{
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-del");
+          if (confirm("¿Borrar este gasto?")) {
+            deleteExpense(id);
+            toast("Gasto borrado");
+            render();
+          }
+        });
+      });
+    }
+
+    // -----------------------------
+    // FORM
+    // -----------------------------
+    function beginEdit(id) {
+      const e = db.expenses.find(x => x.id === id);
+      if (!e) return;
+      editingId = id;
+      elEditId.textContent = id;
+      elDate.value = e.date;
+      elAmount.value = e.amount;
+      elCategory.value = e.category;
+      elMethod.value = e.method;
+      elDesc.value = e.desc || "";
+      elVendor.value = e.vendor || "";
+      elFormHint.textContent = "Editando. Guarda para aplicar cambios.";
+      toast("Modo edición");
+    }
+
+    function clearForm() {
+      editingId = null;
+      elEditId.textContent = "Nuevo";
+      elDate.value = todayISO();
+      elAmount.value = "";
+      elDesc.value = "";
+      elVendor.value = "";
+      elNewCategory.value = "";
+      elFormHint.textContent = "—";
+    }
+
+    document.getElementById("expenseForm").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+
+      const month = elMonth.value;
+      const date = elDate.value;
+      if (!date) return toast("Pon una fecha");
+      if (monthFromDate(date) !== month) {
+        if (!confirm("La fecha no está dentro del mes seleccionado. ¿Guardar igual?")) return;
+      }
+
+      // Nueva categoría
+      const nc = (elNewCategory.value || "").trim();
+      if (nc) {
+        if (!db.categories.includes(nc)) {
+          db.categories.push(nc);
+          rebuildSelects();
+          saveData();
+          toast("Categoría creada");
+        }
+        elCategory.value = nc;
+      }
+
+      const amount = Number(elAmount.value);
+      if (!Number.isFinite(amount) || amount <= 0) return toast("Monto inválido");
+
+      const exp = {
+        id: editingId || uid(),
+        date,
+        amount: Number(amount.toFixed(2)),
+        category: elCategory.value,
+        method: elMethod.value,
+        desc: (elDesc.value || "").trim(),
+        vendor: (elVendor.value || "").trim()
+      };
+
+      upsertExpense(exp);
+      toast(editingId ? "Gasto actualizado" : "Gasto guardado");
+      clearForm();
+      render();
+    });
+
+    document.getElementById("btnClear").addEventListener("click", () => {
+      clearForm();
+      toast("Formulario limpio");
+    });
+
+    document.getElementById("btnToday").addEventListener("click", () => {
+      elMonth.value = currentMonthValue();
+      elDate.value = todayISO();
+      render();
+    });
+
+    // Month change
+    elMonth.addEventListener("change", () => {
+      // set date to 1st day of that month for convenience
+      const m = elMonth.value;
+      elDate.value = m ? `${m}-01` : todayISO();
+      render();
+    });
+
+    // Search
+    elSearch.addEventListener("input", () => render());
+
+    // Currency
+    elCurrency.addEventListener("change", () => {
+      db.currency = elCurrency.value;
+      saveData();
+      render();
+      toast("Moneda actualizada");
+    });
+
+    // -----------------------------
+    // EXPORT / IMPORT
+    // -----------------------------
+    function downloadFile(filename, content, mime="application/octet-stream") {
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("btnBackup").addEventListener("click", () => {
+      const name = `backup_gastos_${elMonth.value || currentMonthValue()}.json`;
+      downloadFile(name, JSON.stringify(db, null, 2), "application/json");
+      toast("Backup JSON descargado");
+    });
+
+    document.getElementById("btnCSV").addEventListener("click", () => {
+      const month = elMonth.value || currentMonthValue();
+      const items = getMonthExpenses(month).slice().sort((a,b)=>a.date>b.date?1:-1);
+
+      const headers = ["date","category","desc","vendor","method","amount","currency"];
+      const rows = [headers.join(",")];
+
+      for (const e of items) {
+        const line = [
+          e.date,
+          `"${(e.category||"").replaceAll('"','""')}"`,
+          `"${(e.desc||"").replaceAll('"','""')}"`,
+          `"${(e.vendor||"").replaceAll('"','""')}"`,
+          `"${(e.method||"").replaceAll('"','""')}"`,
+          Number(e.amount||0).toFixed(2),
+          db.currency || "USD"
+        ].join(",");
+        rows.push(line);
+      }
+
+      downloadFile(`gastos_${month}.csv`, rows.join("\n"), "text/csv");
+      toast("CSV exportado");
+    });
+
+    const fileImport = document.getElementById("fileImport");
+    document.getElementById("btnImport").addEventListener("click", () => fileImport.click());
+
+    fileImport.addEventListener("change", async () => {
+      const file = fileImport.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const imported = JSON.parse(text);
+
+        if (!imported || typeof imported !== "object") throw new Error("JSON inválido");
+        const newDb = {
+          ...structuredClone(defaultData),
+          ...imported,
+          categories: Array.isArray(imported.categories) ? imported.categories : structuredClone(defaultData.categories),
+          methods: Array.isArray(imported.methods) ? imported.methods : structuredClone(defaultData.methods),
+          expenses: Array.isArray(imported.expenses) ? imported.expenses : []
+        };
+
+        db = newDb;
+        saveData();
+        rebuildSelects();
+        elCurrency.value = db.currency || "USD";
+        render();
+        toast("Importación completada");
+      } catch (e) {
+        toast("Error importando JSON");
+        console.error(e);
+      } finally {
+        fileImport.value = "";
+      }
+    });
+
+    document.getElementById("btnReset").addEventListener("click", () => {
+      if (!confirm("¿Seguro que quieres borrar TODOS los datos guardados en este navegador?")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      db = structuredClone(defaultData);
+      saveData();
+      rebuildSelects();
+      elCurrency.value = db.currency;
+      clearForm();
+      render();
+      toast("Datos borrados");
+    });
+
+    // -----------------------------
+    // FIRST RENDER
+    // -----------------------------
+    render();
+  </script>
+</body>
+</html>
