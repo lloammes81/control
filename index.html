@@ -389,17 +389,17 @@
   <div class="toast" id="toast"></div>
 
 <script type="module">
+  // =========================
+  // Supabase (DB online)
+  // =========================
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  const SUPABASE_URL = "https://bgyfrhcrqnoayqrntzom.supabase.co";
+  // ✅ CAMBIA SOLO SI TU PROYECTO ES OTRO
+  const SUPABASE_URL = "https://bgyfrhrcrnqoayqrntzom.supabase.co";
   const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx"; // anon/public
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   window.supabase = supabase;
-
-  console.log("Supabase listo ✅", SUPABASE_URL);
-
-
   /* ======================================
      FUNCIÓN PARA VERIFICAR CONEXIÓN
   ====================================== */
@@ -1488,6 +1488,7 @@ $("btnReset").onclick = async ()=>{
 </script>
 </body>
 </html>
+
 
 
 
