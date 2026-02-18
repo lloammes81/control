@@ -1,16 +1,19 @@
 {
   "name": "Bills Control",
   "short_name": "Bills",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+
   "icons": [
     {
       "src": "logo.svg",
-      "sizes": "200x200",
+      "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
-  ],
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220"
+  ]
 }
+
