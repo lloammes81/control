@@ -98,6 +98,21 @@
 </head>
 
 <body>
+  <div id="dbConnStatus" style="
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  background: #222;
+  border: 1px solid #555;
+  padding: 8px 14px;
+  border-radius: 12px;
+  color: white;
+  font-size: 13px;
+  z-index: 9999;
+">
+  Verificando conexión…
+</div>
+
   <img src="logo.svg" width="80" alt="Bills Control Logo" style="border-radius:16px;">
   <div class="wrap">
     <header>
@@ -376,6 +391,49 @@
   <div class="toast" id="toast"></div>
 
 <script>
+
+  <script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  const SUPABASE_URL = "https://bgyfrhrcrnqoayqrntzom.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx";
+
+  // Conexión a Supabase
+  window.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  console.log("Supabase conectado correctamente ✔️");
+
+  /* ======================================
+     FUNCIÓN PARA VERIFICAR CONEXIÓN
+  ====================================== */
+  async function verificarConexionSupabase() {
+    const box = document.getElementById("dbConnStatus");
+
+    try {
+      const { error } = await supabase.from("settings").select("key").limit(1);
+
+      if (error) throw error;
+
+      const hora = new Date().toLocaleTimeString("es-US", { hour: "2-digit", minute: "2-digit" });
+
+      box.textContent = `🟢 Conectado — Última sync: ${hora}`;
+      box.style.background = "#043";
+      box.style.borderColor = "#0f5";
+
+    } catch (e) {
+      box.textContent = "🔴 Sin conexión a la base de datos";
+      box.style.background = "#400";
+      box.style.borderColor = "#f55";
+    }
+  }
+
+  // Ejecutar al iniciar
+  verificarConexionSupabase();
+
+  // Verificar cada 15 segundos
+  setInterval(verificarConexionSupabase, 15000);
+</script>
+
 /* ===========================
    PWA (Service Worker)
    =========================== */
