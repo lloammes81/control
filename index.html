@@ -1,15 +1,3 @@
-<script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-  const SUPABASE_URL = "https://bgyfrhrcrnqoayqrntzom.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx";
-
-  // Conexión a Supabase
-  window.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  console.log("Supabase conectado correctamente ✔️");
-</script>
-
 <!doctype html>
 <html lang="es">
 <head>
@@ -134,6 +122,16 @@
             <option value="ok">Al día</option>
           </select>
         </div>
+
+        <div class="chip">
+          <label for="dbMode">DB</label>
+          <select id="dbMode">
+            <option value="local">Local</option>
+            <option value="supabase">Supabase</option>
+          </select>
+        </div>
+
+        <button id="btnSync" title="Copia datos Local → Supabase">Sync → Supabase</button>
 
         <button id="btnBackup">Backup JSON</button>
         <button id="btnImport">Importar JSON</button>
@@ -390,18 +388,17 @@
 
   <div class="toast" id="toast"></div>
 
-<script>
-
-  <script type="module">
+<script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  const SUPABASE_URL = "https://bgyfrhrcrnqoayqrntzom.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx";
+  const SUPABASE_URL = "https://bgyfrhcrqnoayqrntzom.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx"; // anon/public
 
-  // Conexión a Supabase
-  window.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  window.supabase = supabase;
 
-  console.log("Supabase conectado correctamente ✔️");
+  console.log("Supabase listo ✅", SUPABASE_URL);
+
 
   /* ======================================
      FUNCIÓN PARA VERIFICAR CONEXIÓN
@@ -432,7 +429,7 @@
 
   // Verificar cada 15 segundos
   setInterval(verificarConexionSupabase, 15000);
-</script>
+
 
 /* ===========================
    PWA (Service Worker)
@@ -499,7 +496,101 @@ async function setSetting(key, value) {
   });
 }
 
-async function putBill(bill) {
+
+/* ===========================
+   DB MODE (Local / Supabase)
+   =========================== */
+async function getDbMode() {
+  return await getSetting("__dbMode", "local");
+}
+async function setDbMode(mode) {
+  await setSetting("__dbMode", mode);
+}
+
+const SB_TABLE_BILLS    = "bills";
+const SB_TABLE_PAYMENTS = "payments";
+
+/* ---- Router: usa Local o Supabase ---- */
+async function putBill(bill){
+  const mode = await getDbMode();
+  return mode === "supabase" ? putBill_SUPABASE(bill) : putBill_LOCAL(bill);
+}
+async function listBills(){
+  const mode = await getDbMode();
+  return mode === "supabase" ? listBills_SUPABASE() : listBills_LOCAL();
+}
+async function deleteBill(billId){
+  const mode = await getDbMode();
+  return mode === "supabase" ? deleteBill_SUPABASE(billId) : deleteBill_LOCAL(billId);
+}
+async function addPayment(payment){
+  const mode = await getDbMode();
+  return mode === "supabase" ? addPayment_SUPABASE(payment) : addPayment_LOCAL(payment);
+}
+async function listPaymentsByBill(billId){
+  const mode = await getDbMode();
+  return mode === "supabase" ? listPaymentsByBill_SUPABASE(billId) : listPaymentsByBill_LOCAL(billId);
+}
+async function deletePayment(paymentId){
+  const mode = await getDbMode();
+  return mode === "supabase" ? deletePayment_SUPABASE(paymentId) : deletePayment_LOCAL(paymentId);
+}
+
+/* ===========================
+   Supabase (CRUD)
+   Requiere que existan tablas:
+   - bills (id PRIMARY KEY, y columnas compatibles con tu objeto bill)
+   - payments (id PRIMARY KEY, bill_id, y columnas compatibles con tu objeto payment)
+   =========================== */
+async function sbPing(){
+  // Si falla aquí, normalmente es RLS/policies
+  const { error } = await supabase.from(SB_TABLE_BILLS).select("id").limit(1);
+  if (error) throw error;
+}
+
+async function putBill_SUPABASE(bill){
+  await sbPing();
+  const { error } = await supabase.from(SB_TABLE_BILLS).upsert(bill, { onConflict: "id" });
+  if (error) throw error;
+  return true;
+}
+async function listBills_SUPABASE(){
+  await sbPing();
+  const { data, error } = await supabase.from(SB_TABLE_BILLS).select("*");
+  if (error) throw error;
+  return data || [];
+}
+async function deleteBill_SUPABASE(billId){
+  await sbPing();
+  // borrar pagos del bill (si no tienes cascade)
+  await supabase.from(SB_TABLE_PAYMENTS).delete().eq("bill_id", billId);
+  const { error } = await supabase.from(SB_TABLE_BILLS).delete().eq("id", billId);
+  if (error) throw error;
+  return true;
+}
+async function addPayment_SUPABASE(payment){
+  await sbPing();
+  const { error } = await supabase.from(SB_TABLE_PAYMENTS).upsert(payment, { onConflict: "id" });
+  if (error) throw error;
+  return true;
+}
+async function listPaymentsByBill_SUPABASE(billId){
+  await sbPing();
+  const { data, error } = await supabase
+    .from(SB_TABLE_PAYMENTS)
+    .select("*")
+    .eq("bill_id", billId);
+  if (error) throw error;
+  return (data || []).sort((a,b)=> (a.pay_date > b.pay_date ? -1 : 1));
+}
+async function deletePayment_SUPABASE(paymentId){
+  await sbPing();
+  const { error } = await supabase.from(SB_TABLE_PAYMENTS).delete().eq("id", paymentId);
+  if (error) throw error;
+  return true;
+}
+
+async function putBill_LOCAL(bill) {
   const db = await openDB();
   return new Promise((resolve,reject)=>{
     const t = db.transaction("bills","readwrite");
@@ -510,7 +601,7 @@ async function putBill(bill) {
   });
 }
 
-async function listBills() {
+async function listBills_LOCAL() {
   const db = await openDB();
   return new Promise((resolve,reject)=>{
     const t = db.transaction("bills","readonly");
@@ -527,7 +618,7 @@ async function listBills() {
   });
 }
 
-async function addPayment(payment) {
+async function addPayment_LOCAL(payment) {
   const db = await openDB();
   return new Promise((resolve,reject)=>{
     const t = db.transaction("payments","readwrite");
@@ -538,7 +629,7 @@ async function addPayment(payment) {
   });
 }
 
-async function listPaymentsByBill(billId) {
+async function listPaymentsByBill_LOCAL(billId) {
   const db = await openDB();
   return new Promise((resolve,reject)=>{
     const t = db.transaction("payments","readonly");
@@ -556,7 +647,7 @@ async function listPaymentsByBill(billId) {
   });
 }
 
-async function deletePayment(paymentId) {
+async function deletePayment_LOCAL(paymentId) {
   const db = await openDB();
   return new Promise((resolve,reject)=>{
     const t = db.transaction("payments","readwrite");
@@ -567,7 +658,7 @@ async function deletePayment(paymentId) {
   });
 }
 
-async function deleteBill(billId) {
+async function deleteBill_LOCAL(billId) {
   const db = await openDB();
   return new Promise((resolve,reject)=>{
     const t = db.transaction(["bills","payments"],"readwrite");
@@ -1338,6 +1429,57 @@ $("btnReset").onclick = async ()=>{
 
   await registerSW();
   await refresh();
+
+/* ===========================
+   UI: selector DB + Sync
+   =========================== */
+(async ()=>{
+  const sel = document.getElementById("dbMode");
+  if (sel){
+    sel.value = await getDbMode();
+    sel.addEventListener("change", async ()=>{
+      await setDbMode(sel.value);
+      toast("DB: " + (sel.value === "supabase" ? "Supabase" : "Local"));
+      await refresh();
+    });
+  }
+
+  const btnSync = document.getElementById("btnSync");
+  if (btnSync){
+    btnSync.addEventListener("click", async ()=>{
+      try{
+        await sbPing();
+        // leer todo local
+        const localBills = await listBills_LOCAL();
+
+        const db = await openDB();
+        const localPayments = await new Promise((resolve,reject)=>{
+          const t = db.transaction("payments","readonly");
+          const s = t.objectStore("payments");
+          const out = [];
+          const r = s.openCursor();
+          r.onsuccess = ()=>{ const c=r.result; if(!c) return resolve(out); out.push(c.value); c.continue(); };
+          r.onerror = ()=> reject(r.error);
+        });
+
+        if (localBills.length){
+          const { error } = await supabase.from(SB_TABLE_BILLS).upsert(localBills, { onConflict:"id" });
+          if (error) throw error;
+        }
+        if (localPayments.length){
+          const { error } = await supabase.from(SB_TABLE_PAYMENTS).upsert(localPayments, { onConflict:"id" });
+          if (error) throw error;
+        }
+
+        toast("Sync OK: Local → Supabase");
+      }catch(e){
+        console.error(e);
+        toast("Sync falló: " + (e?.message || e));
+      }
+    });
+  }
+})();
+
   clearForm();
   resetPayBox();
 
@@ -1346,6 +1488,7 @@ $("btnReset").onclick = async ()=>{
 </script>
 </body>
 </html>
+
 
 
 
