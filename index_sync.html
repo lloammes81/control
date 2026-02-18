@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Fabre Bills Control — Sync Version</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ====== ESTILOS BÁSICOS ====== -->
+<style>
+body { background:#0b1220; color:#eef3ff; font-family:Arial; padding:20px; }
+.card { background:#111a2e; padding:20px; border-radius:14px; margin-bottom:20px; }
+input,select,button {
+  padding:10px; border-radius:10px; border:1px solid #333;
+  background:#0d1528; color:#fff; margin:5px 0; width:100%;
+}
+button { cursor:pointer; background:#1c7ff2; }
+#status { padding:10px; border-radius:10px; margin-bottom:10px; }
+.ok { background:#003b0a; border:1px solid #00aa44; }
+.err { background:#4b0000; border:1px solid #aa0000; }
+</style>
+
+<!-- ====== SUPABASE INIT ====== -->
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://bgyfrhrcrnqoayqrntzom.supabase.co";
+const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx";
+
+window.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Verificar conexión inicial
+window.addEventListener("DOMContentLoaded", async () => {
+    const box = document.getElementById("status");
+
+    try {
+        const { data, error } = await supabase.from("bills").select("*").limit(1);
+        if (error) {
+            box.className = "err";
+            box.textContent = "❌ Error conectando a Supabase";
+        } else {
+            box.className = "ok";
+            box.textContent = "✔️ Conectado a Supabase";
+        }
+    } catch {
+        box.className = "err";
+        box.textContent = "❌ No se pudo comunicar con Supabase";
+    }
+});
+</script>
+
+<!-- ====== INDEXEDDB + SYNC ====== -->
+<script>
+// IndexedDB
+const DB = "fabre_sync_db";
+const VERSION = 1;
+
+function openDB() {
+    return new Promise((resolve) => {
+        const req = indexedDB.open(DB, VERSION);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains("bills"))
+                db.createObjectStore("bills", { keyPath: "id" });
+        };
+        req.onsuccess = () => resolve(req.result);
+    });
+}
+
+async function addLocalBill(bill) {
+    const db = await openDB();
+    const tx = db.transaction("bills", "readwrite");
+    tx.objectStore("bills").put(bill);
+}
+
+async function getLocalBills() {
+    const db = await openDB();
+    return new Promise(resolve => {
+        const out = [];
+        const cursor = db.transaction("bills").objectStore("bills").openCursor();
+        cursor.onsuccess = () => {
+            const c = cursor.result;
+            if (!c) return resolve(out);
+            out.push(c.value);
+            c.continue();
+        };
+    });
+}
+
+// Sync hacia Supabase
+async function syncToSupabase() {
+    const local = await getLocalBills();
+    for (const b of local) {
+        await supabase.from("bills").upsert(b);
+    }
+    alert("✅ Sincronizado con Supabase");
+}
+</script>
+
+</head>
+<body>
+
+<h1>Fabre Bills Control — Sync Version</h1>
+
+<div id="status">Verificando conexión…</div>
+
+<div class="card">
+<h2>Agregar Bill</h2>
+<input id="billName" placeholder="Nombre del bill">
+<input id="billAmount" type="number" placeholder="Monto mensual">
+<button onclick="saveBill()">Guardar</button>
+</div>
+
+<div class="card">
+<h2>Sincronizar con Supabase</h2>
+<button onclick="syncToSupabase()">Sincronizar</button>
+</div>
+
+<script>
+// Guardar en local DB
+async function saveBill() {
+    const bill = {
+        id: crypto.randomUUID(),
+        name: document.getElementById("billName").value,
+        amount: Number(document.getElementById("billAmount").value),
+        created_at: new Date().toISOString()
+    };
+
+    await addLocalBill(bill);
+    alert("Bill guardado localmente ✔️");
+}
+</script>
+
+</body>
+</html>
