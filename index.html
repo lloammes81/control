@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#0b1220" />
   <title>Control de Bills (DB Local)</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
   <style>
     :root{
       --bg:#0b1220;--card:#111a2e;--muted:#a7b2cc;--text:#eef3ff;
@@ -29,6 +34,10 @@
     button.primary{background:rgba(77,163,255,.22);border-color:rgba(77,163,255,.35)}
     button.danger{background:rgba(255,77,109,.18);border-color:rgba(255,77,109,.35)}
     button.ok{background:rgba(46,229,157,.16);border-color:rgba(46,229,157,.30)}
+    button.iconBtn{
+      width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;
+      font-weight:900;line-height:1;padding:0;border-radius:12px;
+    }
     .card{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
     .hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
     .bd{padding:16px}
@@ -44,7 +53,7 @@
     @media(max-width:680px){form{grid-template-columns:1fr}}
     .row{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .tableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
-    table{width:100%;border-collapse:collapse;min-width:980px}
+    table{width:100%;border-collapse:collapse;min-width:1040px}
     th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
     th{color:var(--muted);position:sticky;top:0;background:rgba(17,26,46,.95)}
     .mono{font-family:var(--mono)}
@@ -53,20 +62,41 @@
     .pill.overdue{border-color:rgba(255,77,109,.55);background:rgba(255,77,109,.12)}
     .pill.soon{border-color:rgba(77,163,255,.55);background:rgba(77,163,255,.12)}
     .pill.ok{border-color:rgba(46,229,157,.55);background:rgba(46,229,157,.10)}
-    .toast{position:fixed;right:16px;bottom:16px;background:rgba(17,26,46,.95);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);display:none;max-width:420px}
+    .toast{position:fixed;right:16px;bottom:16px;background:rgba(17,26,46,.95);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);display:none;max-width:520px}
     .toast.show{display:block}
     .banner{padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .modalBack{
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      display:none; align-items:center; justify-content:center; padding:14px;
+    }
+    .modal{
+      width:min(980px, 100%);
+      max-height:88vh;
+      overflow:auto;
+      background:rgba(17,26,46,.98);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+    }
+    .modal.smallModal{width:min(520px,100%);}
+    .modal .hd{position:sticky;top:0;background:rgba(17,26,46,.98);z-index:2}
+    .modalBack.show{display:flex}
+    .small{font-size:12px;color:var(--muted)}
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <header>
       <div>
         <h1>Control de Bills (Pagos Mensuales) — DB Local</h1>
-        <div class="muted">Guarda en IndexedDB (local). Marca pagado y calcula próxima fecha automáticamente.</div>
+        <div class="muted">Historial de pagos + notificaciones (PWA). Marca pagado y calcula próxima fecha.</div>
       </div>
       <div class="toolbar">
+        <button class="ok" id="btnInstallTips">Cómo instalar</button>
         <button class="ok" id="btnNotif">Activar notificaciones</button>
+        <button class="ok" id="btnSchedule">Programar alertas</button>
+
         <div class="chip">
           <label for="filter">Filtro</label>
           <select id="filter">
@@ -76,6 +106,7 @@
             <option value="ok">Al día</option>
           </select>
         </div>
+
         <button id="btnBackup">Backup JSON</button>
         <button id="btnImport">Importar JSON</button>
         <button class="danger" id="btnReset">Borrar DB</button>
@@ -125,8 +156,12 @@
               <option value="10">10 días</option>
               <option value="15">15 días</option>
             </select>
-            <span class="muted">(por defecto)</span>
+            <span class="muted">La app intentará programar alertas (según soporte del navegador).</span>
           </div>
+        </div>
+
+        <div class="small" style="margin-top:10px">
+          Nota: Con DB local, los datos quedan en este dispositivo. Para moverlos: Backup JSON → Importar en otro.
         </div>
       </div>
     </div>
@@ -140,9 +175,15 @@
         </div>
         <div class="bd">
           <form id="billForm">
-            <div>
+
+            <!-- NOMBRE como desplegable + botón para agregar -->
+            <div style="grid-column:1/-1;">
               <div class="muted">Nombre del bill</div>
-              <input id="name" type="text" placeholder="Ej: Luz / Renta / Seguro / Teléfono" required maxlength="60">
+              <div class="row" style="margin-top:8px;">
+                <select id="nameSelect" style="flex:1;min-width:260px;"></select>
+                <button class="ok iconBtn" type="button" id="btnAddName" title="Agregar nombre">+</button>
+              </div>
+              <div class="muted" style="margin-top:6px;">Si no está en la lista, agrégalo con “+”.</div>
             </div>
 
             <div>
@@ -150,9 +191,10 @@
               <input id="amount" type="number" step="0.01" min="0" placeholder="Ej: 120.50" required>
             </div>
 
+            <!-- VENCIMIENTO como combo -->
             <div>
               <div class="muted">Día de vencimiento (cada mes)</div>
-              <input id="dueDay" type="number" min="1" max="31" placeholder="Ej: 15" required>
+              <select id="dueDay" required></select>
               <div class="muted" style="margin-top:6px;">* Si el mes no tiene ese día (31), se usa el último día del mes.</div>
             </div>
 
@@ -184,14 +226,23 @@
         </div>
       </div>
 
-      <!-- MARCAR PAGADO -->
+      <!-- PAGAR -->
       <div class="card">
         <div class="hd">
           <div class="muted">Marcar pagado</div>
           <div class="muted">Bill: <span id="payBillName">—</span></div>
         </div>
         <div class="bd">
-          <div class="muted">Selecciona un bill en la tabla y dale “Pagar”.</div>
+          <div class="muted">Ahora puedes seleccionar el bill desde un desplegable.</div>
+
+          <div class="row" style="margin-top:10px;">
+            <div style="flex:1;min-width:260px;">
+              <div class="muted">Seleccionar bill</div>
+              <select id="payBillSelect" style="width:100%"></select>
+            </div>
+            <button class="ok" type="button" id="btnPayLoad">Cargar</button>
+          </div>
+
           <div style="margin-top:10px" class="row">
             <div style="flex:1;min-width:240px;">
               <div class="muted">Fecha de pago</div>
@@ -202,12 +253,14 @@
               <input id="payAmount" type="number" step="0.01" min="0">
             </div>
           </div>
+
           <div style="margin-top:10px" class="row">
-            <input id="payNote" type="text" placeholder="Nota (opcional)" style="flex:1;min-width:240px;" maxlength="100">
+            <input id="payNote" type="text" placeholder="Nota (opcional)" style="flex:1;min-width:240px;" maxlength="120">
             <button class="ok" id="btnConfirmPay" disabled>Confirmar pago</button>
           </div>
+
           <div class="muted" style="margin-top:10px">
-            Al confirmar, se guarda el pago y se calcula automáticamente la próxima fecha de vencimiento (mensual).
+            Al confirmar: guarda el pago en historial y calcula la próxima fecha (mes siguiente).
           </div>
         </div>
       </div>
@@ -242,7 +295,65 @@
           </table>
         </div>
         <div class="muted" style="margin-top:10px;">
-          * Notificaciones solo salen cuando esta página está abierta (DB local).
+          * Si tu navegador NO soporta “notificación programada”, igual te avisa cuando la app está abierta.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL HISTORIAL -->
+  <div class="modalBack" id="modalBack">
+    <div class="modal">
+      <div class="hd">
+        <div>
+          <div style="font-weight:700">Historial de pagos</div>
+          <div class="small" id="histTitle">—</div>
+        </div>
+        <div class="actions">
+          <button id="btnHistCSV">Exportar CSV</button>
+          <button class="danger" id="btnHistClose">Cerrar</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="row" style="justify-content:space-between">
+          <div class="small">Total pagado: <span class="mono" id="histTotal">—</span></div>
+          <div class="small">Pagos: <span class="mono" id="histCount">0</span></div>
+        </div>
+        <div style="margin-top:12px" class="tableWrap">
+          <table style="min-width:860px">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th class="mono">Monto</th>
+                <th>Nota</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="histBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AGREGAR NOMBRE DE BILL -->
+  <div class="modalBack" id="nameModalBack">
+    <div class="modal smallModal">
+      <div class="hd">
+        <div>
+          <div style="font-weight:700">Agregar nombre de bill</div>
+          <div class="small">Esto solo agrega el nombre a la lista desplegable.</div>
+        </div>
+        <div class="actions">
+          <button class="danger" id="btnNameClose">Cerrar</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="muted">Nombre</div>
+        <input id="newBillName" type="text" placeholder="Ej: Luz / Renta / Seguro..." style="width:100%;margin-top:8px" maxlength="60">
+        <div class="row" style="margin-top:12px;">
+          <button class="ok" id="btnNameSave" type="button">Guardar</button>
+          <span class="muted" id="nameHint">—</span>
         </div>
       </div>
     </div>
@@ -251,6 +362,19 @@
   <div class="toast" id="toast"></div>
 
 <script>
+/* ===========================
+   PWA (Service Worker)
+   =========================== */
+async function registerSW() {
+  if (!("serviceWorker" in navigator)) return null;
+  try {
+    const reg = await navigator.serviceWorker.register("./sw.js");
+    return reg;
+  } catch {
+    return null;
+  }
+}
+
 /* ===========================
    IndexedDB (DB local)
    =========================== */
@@ -262,18 +386,13 @@ function openDB() {
     const req = indexedDB.open(DB_NAME, DB_VER);
     req.onupgradeneeded = () => {
       const db = req.result;
-
-      // settings (key-value)
       if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings");
 
-      // bills
       if (!db.objectStoreNames.contains("bills")) {
         const st = db.createObjectStore("bills", { keyPath: "id" });
         st.createIndex("by_name", "name", { unique: false });
         st.createIndex("by_next_due", "next_due_date", { unique: false });
       }
-
-      // payments history
       if (!db.objectStoreNames.contains("payments")) {
         const st = db.createObjectStore("payments", { keyPath: "id" });
         st.createIndex("by_bill", "bill_id", { unique: false });
@@ -285,7 +404,7 @@ function openDB() {
   });
 }
 
-function id() {
+function uid() {
   return (crypto.randomUUID ? crypto.randomUUID() : ("id_" + Math.random().toString(16).slice(2) + "_" + Date.now()));
 }
 
@@ -301,7 +420,6 @@ async function getSetting(key, fallback) {
     });
   } catch { return fallback; }
 }
-
 async function setSetting(key, value) {
   const db = await openDB();
   return new Promise((resolve,reject)=>{
@@ -321,28 +439,6 @@ async function putBill(bill) {
     const r = s.put(bill);
     r.onsuccess = ()=> resolve(true);
     r.onerror = ()=> reject(r.error);
-  });
-}
-
-async function deleteBill(billId) {
-  const db = await openDB();
-  return new Promise((resolve,reject)=>{
-    const t = db.transaction(["bills","payments"],"readwrite");
-    t.objectStore("bills").delete(billId);
-
-    // also delete payments of that bill
-    const p = t.objectStore("payments").index("by_bill");
-    const range = IDBKeyRange.only(billId);
-    const curReq = p.openCursor(range);
-    curReq.onsuccess = () => {
-      const cur = curReq.result;
-      if (!cur) return;
-      t.objectStore("payments").delete(cur.value.id);
-      cur.continue();
-    };
-
-    t.oncomplete = ()=> resolve(true);
-    t.onerror = ()=> reject(t.error);
   });
 }
 
@@ -374,6 +470,56 @@ async function addPayment(payment) {
   });
 }
 
+async function listPaymentsByBill(billId) {
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const t = db.transaction("payments","readonly");
+    const s = t.objectStore("payments").index("by_bill");
+    const out = [];
+    const range = IDBKeyRange.only(billId);
+    const r = s.openCursor(range);
+    r.onsuccess = ()=> {
+      const c = r.result;
+      if (!c) return resolve(out.sort((a,b)=> (a.pay_date > b.pay_date ? -1 : 1)));
+      out.push(c.value);
+      c.continue();
+    };
+    r.onerror = ()=> reject(r.error);
+  });
+}
+
+async function deletePayment(paymentId) {
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const t = db.transaction("payments","readwrite");
+    const s = t.objectStore("payments");
+    const r = s.delete(paymentId);
+    r.onsuccess = ()=> resolve(true);
+    r.onerror = ()=> reject(r.error);
+  });
+}
+
+async function deleteBill(billId) {
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const t = db.transaction(["bills","payments"],"readwrite");
+    t.objectStore("bills").delete(billId);
+
+    const idx = t.objectStore("payments").index("by_bill");
+    const range = IDBKeyRange.only(billId);
+    const curReq = idx.openCursor(range);
+    curReq.onsuccess = () => {
+      const cur = curReq.result;
+      if (!cur) return;
+      t.objectStore("payments").delete(cur.value.id);
+      cur.continue();
+    };
+
+    t.oncomplete = ()=> resolve(true);
+    t.onerror = ()=> reject(t.error);
+  });
+}
+
 async function wipeDB() {
   const ok = await new Promise((resolve)=>{
     const req = indexedDB.deleteDatabase(DB_NAME);
@@ -388,7 +534,7 @@ async function wipeDB() {
    Date helpers
    =========================== */
 const $ = (id)=>document.getElementById(id);
-const toast = (m)=>{ const t=$("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2200); };
+const toast = (m)=>{ const t=$("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2400); };
 
 function todayISO() {
   const d=new Date();
@@ -401,7 +547,6 @@ function toISODate(d) {
   return `${y}-${m}-${day}`;
 }
 function parseISO(iso) {
-  // iso: YYYY-MM-DD
   const [y,m,d] = iso.split("-").map(Number);
   return new Date(y, m-1, d);
 }
@@ -420,12 +565,10 @@ function dueDateForMonth(year, monthIndex0, dueDay) {
   return new Date(year, monthIndex0, day);
 }
 function computeInitialNextDue(dueDay) {
-  // próximo vencimiento: este mes si aún no pasó, si no, el próximo mes
   const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const thisMonthDue = dueDateForMonth(now.getFullYear(), now.getMonth(), dueDay);
-  if (thisMonthDue >= new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
-    return toISODate(thisMonthDue);
-  }
+  if (thisMonthDue >= today) return toISODate(thisMonthDue);
   const nextMonthDue = dueDateForMonth(now.getFullYear(), now.getMonth()+1, dueDay);
   return toISODate(nextMonthDue);
 }
@@ -436,21 +579,18 @@ function computeNextDueAfterPay(currentNextDueISO, dueDay) {
   const next = dueDateForMonth(y, m+1, dueDay);
   return toISODate(next);
 }
-
 function fmtMoney(value, cur) {
   try { return new Intl.NumberFormat("en-US",{style:"currency",currency:cur}).format(Number(value||0)); }
   catch { return "$"+Number(value||0).toFixed(2); }
 }
+function escapeHtml(str){
+  return (str??"").toString()
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
 
 /* ===========================
-   App state
-   =========================== */
-let cache = { bills: [], currency:"USD", defaultRemindDays:7 };
-let editingId = null;
-let payingBillId = null;
-
-/* ===========================
-   Notifications (when app open)
+   Notifications
    =========================== */
 async function enableNotifications() {
   if (!("Notification" in window)) return toast("Este navegador no soporta notificaciones");
@@ -458,7 +598,6 @@ async function enableNotifications() {
   if (perm === "granted") toast("Notificaciones activadas");
   else toast("Notificaciones bloqueadas");
 }
-
 function showNotification(title, body) {
   try {
     if (!("Notification" in window)) return;
@@ -466,8 +605,7 @@ function showNotification(title, body) {
     new Notification(title, { body });
   } catch {}
 }
-
-async function notifyDueBills() {
+async function notifyDueBillsWhileOpen() {
   const remindDays = Number(await getSetting("defaultRemindDays", 7));
   const today = todayISO();
 
@@ -476,10 +614,8 @@ async function notifyDueBills() {
     const daysLeft = daysBetween(today, b.next_due_date);
     const overdue = daysLeft < 0;
     const soon = daysLeft >= 0 && daysLeft <= remindDays;
-
     if (!overdue && !soon) continue;
 
-    // anti-spam: una notificación por día por bill
     const lastN = b.last_notified_date || null;
     if (lastN === today) continue;
 
@@ -491,9 +627,141 @@ async function notifyDueBills() {
   }
 }
 
+/**
+ * Intento de PROGRAMAR notificaciones (PWA) usando showTrigger/TimestampTrigger
+ * - Solo funciona si el navegador soporta “scheduled notifications”.
+ * - Si no, se queda en modo “mientras esté abierta”.
+ */
+function dueTimestampAtMorning(dueISO) {
+  const d = parseISO(dueISO);
+  d.setHours(9,0,0,0);
+  return d.getTime();
+}
+async function scheduleAllBills() {
+  const reg = await navigator.serviceWorker?.ready;
+  if (!reg) return toast("Service Worker no disponible. Activa GitHub Pages/HTTPS.");
+
+  if (Notification.permission !== "granted") {
+    toast("Primero activa notificaciones.");
+    return;
+  }
+
+  const hasTrigger = ("TimestampTrigger" in window);
+  if (!hasTrigger) {
+    toast("Tu navegador no soporta notificaciones programadas. Se avisará solo con la app abierta.");
+    return;
+  }
+
+  let scheduled = 0;
+  const remindDays = Number(await getSetting("defaultRemindDays", 7));
+
+  for (const b of cache.bills) {
+    if (!b.next_due_date) continue;
+
+    const dueTs = dueTimestampAtMorning(b.next_due_date);
+    const soonTs = remindDays > 0 ? (dueTs - remindDays * 24*60*60*1000) : null;
+    const now = Date.now();
+
+    if (soonTs && soonTs > now) {
+      try {
+        const trig = new TimestampTrigger(soonTs);
+        await reg.showNotification("Bill por vencer: " + b.name, {
+          body: `Vence el ${b.next_due_date} | Monto: ${fmtMoney(b.amount_monthly, cache.currency)}`,
+          tag: `soon-${b.id}-${b.next_due_date}`,
+          renotify: true,
+          showTrigger: trig
+        });
+        scheduled++;
+      } catch {}
+    }
+
+    if (dueTs > now) {
+      try {
+        const trig = new TimestampTrigger(dueTs);
+        await reg.showNotification("Bill HOY vence: " + b.name, {
+          body: `Vence hoy (${b.next_due_date}) | Monto: ${fmtMoney(b.amount_monthly, cache.currency)}`,
+          tag: `due-${b.id}-${b.next_due_date}`,
+          renotify: true,
+          showTrigger: trig
+        });
+        scheduled++;
+      } catch {}
+    }
+  }
+
+  toast(scheduled ? `Alertas programadas: ${scheduled}` : "No se pudo programar (o ya pasaron las fechas).");
+}
+
 /* ===========================
-   Render
+   Dropdown helpers (Nombres + Días + Pay Select)
    =========================== */
+function buildDueDayOptions() {
+  const sel = $("dueDay");
+  sel.innerHTML = "";
+  for (let i=1;i<=31;i++){
+    const opt=document.createElement("option");
+    opt.value=String(i);
+    opt.textContent = `Día ${i}`;
+    sel.appendChild(opt);
+  }
+}
+
+async function getNameLibrary() {
+  return await getSetting("billNameLibrary", []);
+}
+async function setNameLibrary(names) {
+  // unique + sort
+  const uniq = Array.from(new Set((names||[]).map(x=>String(x||"").trim()).filter(Boolean)));
+  uniq.sort((a,b)=>a.localeCompare(b));
+  await setSetting("billNameLibrary", uniq);
+  return uniq;
+}
+
+async function rebuildNameSelect() {
+  const billsNames = cache.bills.map(b=>b.name).filter(Boolean);
+  const lib = await getNameLibrary();
+  const all = await setNameLibrary([...lib, ...billsNames]);
+
+  const sel = $("nameSelect");
+  sel.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Selecciona un bill…";
+  sel.appendChild(placeholder);
+
+  for (const n of all) {
+    const opt=document.createElement("option");
+    opt.value = n;
+    opt.textContent = n;
+    sel.appendChild(opt);
+  }
+}
+
+function rebuildPayBillSelect() {
+  const sel = $("payBillSelect");
+  sel.innerHTML = "";
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "Selecciona un bill…";
+  sel.appendChild(opt0);
+
+  for (const b of cache.bills) {
+    const opt=document.createElement("option");
+    opt.value = b.id;
+    const due = b.next_due_date ? ` | Próximo: ${b.next_due_date}` : "";
+    opt.textContent = `${b.name}${due}`;
+    sel.appendChild(opt);
+  }
+}
+
+/* ===========================
+   Status + Render
+   =========================== */
+let cache = { bills: [], currency:"USD", defaultRemindDays:7 };
+let editingId = null;
+let payingBillId = null;
+let histBillId = null;
+
 function statusForBill(b, remindDays, today) {
   const daysLeft = daysBetween(today, b.next_due_date);
   if (daysLeft < 0) return { key:"overdue", label:`Vencido (${Math.abs(daysLeft)}d)`, daysLeft };
@@ -509,11 +777,13 @@ async function refresh() {
   $("remindDays").value = String(cache.defaultRemindDays);
 
   cache.bills = await listBills();
-  // sort by next_due_date asc
   cache.bills.sort((a,b)=> (a.next_due_date > b.next_due_date ? 1 : -1));
 
+  await rebuildNameSelect();
+  rebuildPayBillSelect();
+
   render();
-  await notifyDueBills(); // notifica cuando está abierto
+  await notifyDueBillsWhileOpen();
 }
 
 function render() {
@@ -522,7 +792,6 @@ function render() {
   const filter = $("filter").value;
   const q = ($("search").value || "").trim().toLowerCase();
 
-  // KPIs
   const totalMonthly = cache.bills.reduce((s,b)=> s + Number(b.amount_monthly||0), 0);
   let cOver=0, cSoon=0, cOk=0;
 
@@ -540,18 +809,15 @@ function render() {
   $("kOverdueSub").textContent = cOver ? "Tienes bills vencidos" : "—";
   $("kSoonSub").textContent = cSoon ? `Vencen en <= ${remindDays} días` : "—";
 
-  // banner
   const bannerParts = [];
   if (cOver) bannerParts.push(`⚠️ ${cOver} vencido(s)`);
   if (cSoon) bannerParts.push(`⏳ ${cSoon} por vencer`);
   if (!bannerParts.length) bannerParts.push("✅ Todo al día");
   $("bannerText").textContent = bannerParts.join(" | ");
 
-  // filter + search
   const items = cache.bills.filter(b=>{
     const st = statusForBill(b, remindDays, today);
     if (filter !== "all" && st.key !== filter) return false;
-
     if (q) {
       const blob = `${b.name||""} ${b.category||""} ${b.vendor||""}`.toLowerCase();
       if (!blob.includes(q)) return false;
@@ -559,7 +825,6 @@ function render() {
     return true;
   });
 
-  // table
   const tb = $("tbody");
   tb.innerHTML = "";
 
@@ -583,6 +848,7 @@ function render() {
       <td>
         <div class="actions">
           <button class="ok" data-pay="${b.id}">Pagar</button>
+          <button data-hist="${b.id}">Historial</button>
           <button data-edit="${b.id}">Editar</button>
           <button class="danger" data-del="${b.id}">Borrar</button>
         </div>
@@ -591,9 +857,11 @@ function render() {
     tb.appendChild(tr);
   }
 
-  // bind actions
   tb.querySelectorAll("button[data-pay]").forEach(btn=>{
     btn.onclick = () => beginPay(btn.getAttribute("data-pay"));
+  });
+  tb.querySelectorAll("button[data-hist]").forEach(btn=>{
+    btn.onclick = () => openHistory(btn.getAttribute("data-hist"));
   });
   tb.querySelectorAll("button[data-edit]").forEach(btn=>{
     btn.onclick = () => beginEdit(btn.getAttribute("data-edit"));
@@ -606,26 +874,21 @@ function render() {
       toast("Borrado");
       if (payingBillId === id) resetPayBox();
       if (editingId === id) clearForm();
+      if (histBillId === id) closeHistory();
       await refresh();
     };
   });
 }
 
-function escapeHtml(str){
-  return (str??"").toString()
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
-}
-
 /* ===========================
-   Form: add/edit bill
+   Add/Edit bill (con dropdown)
    =========================== */
 function clearForm() {
   editingId = null;
   $("editId").textContent = "Nuevo";
-  $("name").value = "";
+  $("nameSelect").value = "";
   $("amount").value = "";
-  $("dueDay").value = "";
+  $("dueDay").value = "1";
   $("category").value = "";
   $("vendor").value = "";
   $("method").value = "Cash";
@@ -637,9 +900,12 @@ function beginEdit(billId) {
   if (!b) return;
   editingId = billId;
   $("editId").textContent = billId;
-  $("name").value = b.name || "";
+
+  // seleccionar el nombre en dropdown
+  $("nameSelect").value = b.name || "";
+
   $("amount").value = b.amount_monthly ?? "";
-  $("dueDay").value = b.due_day ?? "";
+  $("dueDay").value = String(b.due_day ?? 1);
   $("category").value = b.category || "";
   $("vendor").value = b.vendor || "";
   $("method").value = b.method || "Cash";
@@ -650,19 +916,25 @@ function beginEdit(billId) {
 $("billForm").onsubmit = async (ev)=>{
   ev.preventDefault();
 
-  const name = $("name").value.trim();
+  const name = ($("nameSelect").value || "").trim();
   const amount = Number($("amount").value);
   const dueDay = Number($("dueDay").value);
-  if (!name) return toast("Pon el nombre del bill");
+
+  if (!name) return toast("Selecciona (o agrega) el nombre del bill");
   if (!Number.isFinite(amount) || amount <= 0) return toast("Monto inválido");
   if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) return toast("Día de vencimiento inválido");
 
+  // guardar moneda
   const currency = $("currency").value;
   await setSetting("currency", currency);
   cache.currency = currency;
   $("currencyLabel").textContent = currency;
 
-  const bill = editingId ? (cache.bills.find(x=>x.id===editingId) || { id: editingId }) : { id: id() };
+  // guardar nombre a librería
+  const lib = await getNameLibrary();
+  await setNameLibrary([...lib, name]);
+
+  const bill = editingId ? (cache.bills.find(x=>x.id===editingId) || { id: editingId }) : { id: uid() };
 
   bill.name = name;
   bill.amount_monthly = Number(amount.toFixed(2));
@@ -671,7 +943,6 @@ $("billForm").onsubmit = async (ev)=>{
   bill.vendor = $("vendor").value.trim() || null;
   bill.method = $("method").value;
 
-  // si es nuevo o no tiene next_due_date, calcula inicial
   if (!bill.next_due_date) bill.next_due_date = computeInitialNextDue(dueDay);
 
   await putBill(bill);
@@ -684,29 +955,51 @@ $("billForm").onsubmit = async (ev)=>{
 $("btnClear").onclick = ()=>{ clearForm(); toast("Formulario limpio"); };
 
 /* ===========================
-   Pay flow
+   Pay flow (con dropdown)
    =========================== */
 function resetPayBox() {
   payingBillId = null;
   $("payBillName").textContent = "—";
+  $("payBillSelect").value = "";
   $("payDate").value = todayISO();
   $("payAmount").value = "";
   $("payNote").value = "";
   $("btnConfirmPay").disabled = true;
 }
 
-function beginPay(billId) {
-  const b = cache.bills.find(x=>x.id===billId);
-  if (!b) return;
-
-  payingBillId = billId;
+function setPayFromBill(b) {
+  payingBillId = b.id;
   $("payBillName").textContent = b.name;
   $("payDate").value = todayISO();
   $("payAmount").value = String(b.amount_monthly ?? "");
   $("payNote").value = "";
   $("btnConfirmPay").disabled = false;
+}
+
+function beginPay(billId) {
+  const b = cache.bills.find(x=>x.id===billId);
+  if (!b) return;
+
+  $("payBillSelect").value = billId; // sincroniza dropdown
+  setPayFromBill(b);
   toast("Listo para marcar pagado");
 }
+
+$("btnPayLoad").onclick = ()=>{
+  const id = $("payBillSelect").value;
+  const b = cache.bills.find(x=>x.id===id);
+  if (!b) return toast("Selecciona un bill");
+  setPayFromBill(b);
+  toast("Bill cargado");
+};
+
+$("payBillSelect").onchange = ()=>{
+  const id = $("payBillSelect").value;
+  if (!id) return resetPayBox();
+  const b = cache.bills.find(x=>x.id===id);
+  if (!b) return resetPayBox();
+  setPayFromBill(b);
+};
 
 $("btnConfirmPay").onclick = async ()=>{
   if (!payingBillId) return;
@@ -718,9 +1011,8 @@ $("btnConfirmPay").onclick = async ()=>{
   const payAmount = Number($("payAmount").value);
   if (!Number.isFinite(payAmount) || payAmount <= 0) return toast("Monto pagado inválido");
 
-  // guardar pago en historial
   const payment = {
-    id: id(),
+    id: uid(),
     bill_id: b.id,
     bill_name: b.name,
     pay_date: payDate,
@@ -730,22 +1022,137 @@ $("btnConfirmPay").onclick = async ()=>{
   };
   await addPayment(payment);
 
-  // actualizar bill: last_paid + next_due_date = mes siguiente basado en el vencimiento actual
   b.last_paid_date = payDate;
   b.last_paid_amount = Number(payAmount.toFixed(2));
   b.next_due_date = computeNextDueAfterPay(b.next_due_date, b.due_day);
+  b.last_notified_date = null;
 
   await putBill(b);
 
   toast(`Pagado. Próximo: ${b.next_due_date}`);
   resetPayBox();
   await refresh();
+
+  try { await scheduleAllBills(); } catch {}
 };
 
 resetPayBox();
 
 /* ===========================
-   Settings
+   History modal
+   =========================== */
+function openModal() { $("modalBack").classList.add("show"); }
+function closeModal() { $("modalBack").classList.remove("show"); }
+
+async function openHistory(billId) {
+  const b = cache.bills.find(x=>x.id===billId);
+  if (!b) return;
+
+  histBillId = billId;
+  $("histTitle").textContent = `${b.name} | Monto mensual: ${fmtMoney(b.amount_monthly, cache.currency)} | Próximo: ${b.next_due_date}`;
+  await renderHistory();
+  openModal();
+}
+function closeHistory() {
+  histBillId = null;
+  $("histBody").innerHTML = "";
+  closeModal();
+}
+async function renderHistory() {
+  if (!histBillId) return;
+  const b = cache.bills.find(x=>x.id===histBillId);
+  const pays = await listPaymentsByBill(histBillId);
+  const total = pays.reduce((s,p)=>s + Number(p.amount_paid||0), 0);
+
+  $("histTotal").textContent = fmtMoney(total, cache.currency);
+  $("histCount").textContent = String(pays.length);
+
+  const tb = $("histBody");
+  tb.innerHTML = "";
+  for (const p of pays) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(p.pay_date)}</td>
+      <td class="mono">${fmtMoney(p.amount_paid, cache.currency)}</td>
+      <td>${escapeHtml(p.note || "")}</td>
+      <td><button class="danger" data-delpay="${p.id}">Borrar</button></td>
+    `;
+    tb.appendChild(tr);
+  }
+
+  tb.querySelectorAll("button[data-delpay]").forEach(btn=>{
+    btn.onclick = async ()=>{
+      const pid = btn.getAttribute("data-delpay");
+      if (!confirm("¿Borrar este pago del historial?")) return;
+      await deletePayment(pid);
+      toast("Pago borrado");
+      await renderHistory();
+    };
+  });
+}
+
+function downloadFile(filename, content, mime="application/octet-stream"){
+  const blob = new Blob([content],{type:mime});
+  const url = URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+$("btnHistCSV").onclick = async ()=>{
+  if (!histBillId) return;
+  const b = cache.bills.find(x=>x.id===histBillId);
+  const pays = await listPaymentsByBill(histBillId);
+  const headers = ["bill","pay_date","amount_paid","note","currency"];
+  const rows = [headers.join(",")];
+  for (const p of pays.slice().reverse()) {
+    rows.push([
+      `"${(b?.name||"").replaceAll('"','""')}"`,
+      p.pay_date,
+      Number(p.amount_paid||0).toFixed(2),
+      `"${(p.note||"").replaceAll('"','""')}"`,
+      cache.currency
+    ].join(","));
+  }
+  downloadFile(`historial_${(b?.name||"bill").replaceAll(" ","_")}.csv`, rows.join("\n"), "text/csv");
+  toast("CSV del historial exportado");
+};
+$("btnHistClose").onclick = closeHistory;
+$("modalBack").onclick = (e)=>{ if (e.target === $("modalBack")) closeHistory(); };
+
+/* ===========================
+   Modal: agregar nombre
+   =========================== */
+function openNameModal() {
+  $("newBillName").value = "";
+  $("nameHint").textContent = "—";
+  $("nameModalBack").classList.add("show");
+  setTimeout(()=>$("newBillName").focus(), 60);
+}
+function closeNameModal() {
+  $("nameModalBack").classList.remove("show");
+}
+$("btnAddName").onclick = openNameModal;
+$("btnNameClose").onclick = closeNameModal;
+$("nameModalBack").onclick = (e)=>{ if (e.target === $("nameModalBack")) closeNameModal(); };
+
+$("btnNameSave").onclick = async ()=>{
+  const n = ($("newBillName").value || "").trim();
+  if (!n) { $("nameHint").textContent = "Escribe un nombre."; return; }
+
+  const lib = await getNameLibrary();
+  const newLib = await setNameLibrary([...lib, n]);
+  await rebuildNameSelect();
+
+  $("nameSelect").value = n;
+  $("nameHint").textContent = "Guardado ✅";
+  toast("Nombre agregado");
+  setTimeout(closeNameModal, 500);
+};
+
+/* ===========================
+   Buttons + settings
    =========================== */
 $("remindDays").onchange = async ()=>{
   const v = Number($("remindDays").value);
@@ -758,24 +1165,29 @@ $("filter").onchange = ()=>render();
 $("search").oninput = ()=>render();
 $("btnRefresh").onclick = ()=>refresh().then(()=>toast("Actualizado")).catch(()=>toast("Error"));
 
+$("btnNotif").onclick = enableNotifications;
+$("btnSchedule").onclick = async ()=>{
+  await enableNotifications();
+  const reg = await registerSW();
+  if (!reg) toast("No se pudo registrar SW (revisa GitHub Pages / HTTPS).");
+  await refresh();
+  await scheduleAllBills();
+};
+
+$("btnInstallTips").onclick = ()=>{
+  toast("Para notificaciones con app cerrada: abre en Chrome y elige 'Install app' / 'Agregar a pantalla de inicio'. Luego activa notificaciones y 'Programar alertas'.");
+};
+
 /* ===========================
    Backup / Import / Reset
    =========================== */
-function downloadFile(filename, content, mime="application/octet-stream"){
-  const blob = new Blob([content],{type:mime});
-  const url = URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url; a.download=filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-}
-
 $("btnBackup").onclick = async ()=>{
   const payload = {
-    meta: { app:"fabre_bills", version:1, exported_at:new Date().toISOString() },
+    meta: { app:"fabre_bills", version:3, exported_at:new Date().toISOString() },
     settings: {
       currency: await getSetting("currency","USD"),
-      defaultRemindDays: await getSetting("defaultRemindDays",7)
+      defaultRemindDays: await getSetting("defaultRemindDays",7),
+      billNameLibrary: await getSetting("billNameLibrary", [])
     },
     bills: await listBills(),
     payments: await (async ()=>{
@@ -810,15 +1222,14 @@ fileImport.onchange = async ()=>{
 
     if (data.settings?.currency) await setSetting("currency", data.settings.currency);
     if (Number.isFinite(Number(data.settings?.defaultRemindDays))) await setSetting("defaultRemindDays", Number(data.settings.defaultRemindDays));
+    if (Array.isArray(data.settings?.billNameLibrary)) await setSetting("billNameLibrary", data.settings.billNameLibrary);
 
-    // insertar bills
     for (const b of data.bills) {
       if (!b.id || !b.name) continue;
       if (!b.next_due_date && b.due_day) b.next_due_date = computeInitialNextDue(b.due_day);
       await putBill(b);
     }
 
-    // insertar payments si vienen
     if (Array.isArray(data.payments)) {
       for (const p of data.payments) {
         if (!p.id || !p.bill_id || !p.pay_date) continue;
@@ -828,6 +1239,7 @@ fileImport.onchange = async ()=>{
 
     toast("Importación completada");
     await refresh();
+
   } catch(e){
     console.error(e);
     toast("Error importando JSON");
@@ -845,11 +1257,6 @@ $("btnReset").onclick = async ()=>{
 };
 
 /* ===========================
-   Notifications button
-   =========================== */
-$("btnNotif").onclick = enableNotifications;
-
-/* ===========================
    Boot
    =========================== */
 (async ()=>{
@@ -858,14 +1265,21 @@ $("btnNotif").onclick = enableNotifications;
   if (!cur) await setSetting("currency","USD");
   const rd = await getSetting("defaultRemindDays", null);
   if (rd === null || rd === undefined) await setSetting("defaultRemindDays", 7);
+  const lib = await getSetting("billNameLibrary", null);
+  if (!Array.isArray(lib)) await setSetting("billNameLibrary", []);
 
+  buildDueDayOptions();
+  $("dueDay").value = "1";
+
+  await registerSW();
   await refresh();
+  clearForm();
 
-  // check notifications periodically (only while page open)
-  setInterval(()=>{ notifyDueBills().catch(()=>{}); }, 60 * 1000);
+  setInterval(()=>{ notifyDueBillsWhileOpen().catch(()=>{}); }, 60 * 1000);
 })();
 </script>
 </body>
 </html>
+
 
 
