@@ -1290,6 +1290,22 @@ $("btnReset").onclick = async ()=>{
 </body>
 </html>
 
+<script type="module">
+  async function testConnection() {
+    const { data, error } = await supabase.from("bills").select("*").limit(1);
+
+    if (error) {
+      console.error("Error:", error);
+      alert("❌ Error conectando a Supabase");
+    } else {
+      console.log("Datos recibidos:", data);
+      alert("✔️ Supabase está funcionando");
+    }
+  }
+
+  window.testConnection = testConnection;
+</script>
+
 
 
 
