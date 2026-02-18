@@ -22,6 +22,7 @@
     header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
     h1{margin:0;font-size:22px}
     .muted{color:var(--muted);font-size:12px}
+    .small{font-size:12px;color:var(--muted)}
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .chip{display:flex;gap:8px;align-items:center;padding:10px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.06)}
     .chip label{font-size:12px;color:var(--muted)}
@@ -62,7 +63,7 @@
     .pill.overdue{border-color:rgba(255,77,109,.55);background:rgba(255,77,109,.12)}
     .pill.soon{border-color:rgba(77,163,255,.55);background:rgba(77,163,255,.12)}
     .pill.ok{border-color:rgba(46,229,157,.55);background:rgba(46,229,157,.10)}
-    .toast{position:fixed;right:16px;bottom:16px;background:rgba(17,26,46,.95);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);display:none;max-width:520px}
+    .toast{position:fixed;right:16px;bottom:16px;background:rgba(17,26,46,.95);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);display:none;max-width:560px}
     .toast.show{display:block}
     .banner{padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
     .modalBack{
@@ -81,7 +82,6 @@
     .modal.smallModal{width:min(520px,100%);}
     .modal .hd{position:sticky;top:0;background:rgba(17,26,46,.98);z-index:2}
     .modalBack.show{display:flex}
-    .small{font-size:12px;color:var(--muted)}
   </style>
 </head>
 
@@ -90,7 +90,7 @@
     <header>
       <div>
         <h1>Control de Bills (Pagos Mensuales) — DB Local</h1>
-        <div class="muted">Historial de pagos + notificaciones (PWA). Marca pagado y calcula próxima fecha.</div>
+        <div class="muted">Nombre del bill con combo + botón “+” | Vencimiento con combo | Historial + PWA.</div>
       </div>
       <div class="toolbar">
         <button class="ok" id="btnInstallTips">Cómo instalar</button>
@@ -161,7 +161,7 @@
         </div>
 
         <div class="small" style="margin-top:10px">
-          Nota: Con DB local, los datos quedan en este dispositivo. Para moverlos: Backup JSON → Importar en otro.
+          Datos locales por dispositivo. Para moverlos: Backup JSON → Importar en otro.
         </div>
       </div>
     </div>
@@ -176,12 +176,12 @@
         <div class="bd">
           <form id="billForm">
 
-            <!-- NOMBRE como desplegable + botón para agregar -->
+            <!-- Nombre: combo + botón + -->
             <div style="grid-column:1/-1;">
               <div class="muted">Nombre del bill</div>
               <div class="row" style="margin-top:8px;">
-                <select id="nameSelect" style="flex:1;min-width:260px;"></select>
-                <button class="ok iconBtn" type="button" id="btnAddName" title="Agregar nombre">+</button>
+                <select id="billNameSelect" style="flex:1;min-width:260px;" required></select>
+                <button class="ok iconBtn" type="button" id="btnAddBillName" title="Agregar bill">+</button>
               </div>
               <div class="muted" style="margin-top:6px;">Si no está en la lista, agrégalo con “+”.</div>
             </div>
@@ -191,7 +191,7 @@
               <input id="amount" type="number" step="0.01" min="0" placeholder="Ej: 120.50" required>
             </div>
 
-            <!-- VENCIMIENTO como combo -->
+            <!-- Vencimiento: combo día 1..31 -->
             <div>
               <div class="muted">Día de vencimiento (cada mes)</div>
               <select id="dueDay" required></select>
@@ -233,13 +233,14 @@
           <div class="muted">Bill: <span id="payBillName">—</span></div>
         </div>
         <div class="bd">
-          <div class="muted">Ahora puedes seleccionar el bill desde un desplegable.</div>
+          <div class="muted">Selecciona el bill. Si no existe, agrégalo con “+” y luego créalo en el formulario.</div>
 
           <div class="row" style="margin-top:10px;">
             <div style="flex:1;min-width:260px;">
               <div class="muted">Seleccionar bill</div>
               <select id="payBillSelect" style="width:100%"></select>
             </div>
+            <button class="ok iconBtn" type="button" id="btnPayAddBill" title="Agregar bill">+</button>
             <button class="ok" type="button" id="btnPayLoad">Cargar</button>
           </div>
 
@@ -337,23 +338,23 @@
   </div>
 
   <!-- MODAL: AGREGAR NOMBRE DE BILL -->
-  <div class="modalBack" id="nameModalBack">
+  <div class="modalBack" id="billNameModalBack">
     <div class="modal smallModal">
       <div class="hd">
         <div>
           <div style="font-weight:700">Agregar nombre de bill</div>
-          <div class="small">Esto solo agrega el nombre a la lista desplegable.</div>
+          <div class="small">Esto lo agrega al combo. Luego crea el bill completo (monto + vencimiento) y guarda.</div>
         </div>
         <div class="actions">
-          <button class="danger" id="btnNameClose">Cerrar</button>
+          <button class="danger" id="btnBillNameClose">Cerrar</button>
         </div>
       </div>
       <div class="bd">
         <div class="muted">Nombre</div>
-        <input id="newBillName" type="text" placeholder="Ej: Luz / Renta / Seguro..." style="width:100%;margin-top:8px" maxlength="60">
+        <input id="billNameNew" type="text" placeholder="Ej: Luz / Renta / Seguro..." style="width:100%;margin-top:8px" maxlength="60">
         <div class="row" style="margin-top:12px;">
-          <button class="ok" id="btnNameSave" type="button">Guardar</button>
-          <span class="muted" id="nameHint">—</span>
+          <button class="ok" id="btnBillNameSave" type="button">Guardar</button>
+          <span class="muted" id="billNameHint">—</span>
         </div>
       </div>
     </div>
@@ -367,12 +368,8 @@
    =========================== */
 async function registerSW() {
   if (!("serviceWorker" in navigator)) return null;
-  try {
-    const reg = await navigator.serviceWorker.register("./sw.js");
-    return reg;
-  } catch {
-    return null;
-  }
+  try { return await navigator.serviceWorker.register("./sw.js"); }
+  catch { return null; }
 }
 
 /* ===========================
@@ -531,7 +528,7 @@ async function wipeDB() {
 }
 
 /* ===========================
-   Date helpers
+   Helpers
    =========================== */
 const $ = (id)=>document.getElementById(id);
 const toast = (m)=>{ const t=$("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2400); };
@@ -590,6 +587,83 @@ function escapeHtml(str){
 }
 
 /* ===========================
+   Settings: bill name library + due day options
+   =========================== */
+function buildDueDayOptions() {
+  const sel = $("dueDay");
+  sel.innerHTML = "";
+  for (let i=1;i<=31;i++){
+    const opt=document.createElement("option");
+    opt.value=String(i);
+    opt.textContent=`Día ${i}`;
+    sel.appendChild(opt);
+  }
+}
+
+async function getNameLibrary() {
+  return await getSetting("billNameLibrary", []);
+}
+async function setNameLibrary(names) {
+  const uniq = Array.from(new Set((names||[]).map(x=>String(x||"").trim()).filter(Boolean)));
+  uniq.sort((a,b)=>a.localeCompare(b));
+  await setSetting("billNameLibrary", uniq);
+  return uniq;
+}
+
+/* ===========================
+   App state
+   =========================== */
+let cache = { bills: [], currency:"USD", defaultRemindDays:7 };
+let editingId = null;
+let payingBillId = null;
+let histBillId = null;
+let lastFocusTarget = "form"; // "form" | "pay"
+
+/* ===========================
+   Dropdowns
+   =========================== */
+async function rebuildBillNameCombo(selectedValue = "") {
+  const lib = await getNameLibrary();
+  const dbNames = (cache.bills || []).map(b=>b.name).filter(Boolean);
+  const all = await setNameLibrary([...lib, ...dbNames]);
+
+  const sel = $("billNameSelect");
+  sel.innerHTML = "";
+
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "Selecciona un bill…";
+  sel.appendChild(opt0);
+
+  for (const n of all) {
+    const opt = document.createElement("option");
+    opt.value = n;
+    opt.textContent = n;
+    sel.appendChild(opt);
+  }
+  sel.value = selectedValue || "";
+}
+
+function rebuildPayBillSelect(selectedId = "") {
+  const sel = $("payBillSelect");
+  sel.innerHTML = "";
+
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "Selecciona un bill…";
+  sel.appendChild(opt0);
+
+  for (const b of cache.bills) {
+    const opt = document.createElement("option");
+    opt.value = b.id;
+    const due = b.next_due_date ? ` | Próximo: ${b.next_due_date}` : "";
+    opt.textContent = `${b.name}${due}`;
+    sel.appendChild(opt);
+  }
+  sel.value = selectedId || "";
+}
+
+/* ===========================
    Notifications
    =========================== */
 async function enableNotifications() {
@@ -626,12 +700,6 @@ async function notifyDueBillsWhileOpen() {
     await putBill(b);
   }
 }
-
-/**
- * Intento de PROGRAMAR notificaciones (PWA) usando showTrigger/TimestampTrigger
- * - Solo funciona si el navegador soporta “scheduled notifications”.
- * - Si no, se queda en modo “mientras esté abierta”.
- */
 function dueTimestampAtMorning(dueISO) {
   const d = parseISO(dueISO);
   d.setHours(9,0,0,0);
@@ -641,26 +709,20 @@ async function scheduleAllBills() {
   const reg = await navigator.serviceWorker?.ready;
   if (!reg) return toast("Service Worker no disponible. Activa GitHub Pages/HTTPS.");
 
-  if (Notification.permission !== "granted") {
-    toast("Primero activa notificaciones.");
-    return;
-  }
+  if (Notification.permission !== "granted") return toast("Primero activa notificaciones.");
 
   const hasTrigger = ("TimestampTrigger" in window);
-  if (!hasTrigger) {
-    toast("Tu navegador no soporta notificaciones programadas. Se avisará solo con la app abierta.");
-    return;
-  }
+  if (!hasTrigger) return toast("Tu navegador no soporta notificaciones programadas. Se avisará solo con la app abierta.");
 
   let scheduled = 0;
   const remindDays = Number(await getSetting("defaultRemindDays", 7));
+  const now = Date.now();
 
   for (const b of cache.bills) {
     if (!b.next_due_date) continue;
 
     const dueTs = dueTimestampAtMorning(b.next_due_date);
     const soonTs = remindDays > 0 ? (dueTs - remindDays * 24*60*60*1000) : null;
-    const now = Date.now();
 
     if (soonTs && soonTs > now) {
       try {
@@ -688,80 +750,12 @@ async function scheduleAllBills() {
       } catch {}
     }
   }
-
   toast(scheduled ? `Alertas programadas: ${scheduled}` : "No se pudo programar (o ya pasaron las fechas).");
 }
 
 /* ===========================
-   Dropdown helpers (Nombres + Días + Pay Select)
+   Render + KPIs
    =========================== */
-function buildDueDayOptions() {
-  const sel = $("dueDay");
-  sel.innerHTML = "";
-  for (let i=1;i<=31;i++){
-    const opt=document.createElement("option");
-    opt.value=String(i);
-    opt.textContent = `Día ${i}`;
-    sel.appendChild(opt);
-  }
-}
-
-async function getNameLibrary() {
-  return await getSetting("billNameLibrary", []);
-}
-async function setNameLibrary(names) {
-  // unique + sort
-  const uniq = Array.from(new Set((names||[]).map(x=>String(x||"").trim()).filter(Boolean)));
-  uniq.sort((a,b)=>a.localeCompare(b));
-  await setSetting("billNameLibrary", uniq);
-  return uniq;
-}
-
-async function rebuildNameSelect() {
-  const billsNames = cache.bills.map(b=>b.name).filter(Boolean);
-  const lib = await getNameLibrary();
-  const all = await setNameLibrary([...lib, ...billsNames]);
-
-  const sel = $("nameSelect");
-  sel.innerHTML = "";
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "Selecciona un bill…";
-  sel.appendChild(placeholder);
-
-  for (const n of all) {
-    const opt=document.createElement("option");
-    opt.value = n;
-    opt.textContent = n;
-    sel.appendChild(opt);
-  }
-}
-
-function rebuildPayBillSelect() {
-  const sel = $("payBillSelect");
-  sel.innerHTML = "";
-  const opt0 = document.createElement("option");
-  opt0.value = "";
-  opt0.textContent = "Selecciona un bill…";
-  sel.appendChild(opt0);
-
-  for (const b of cache.bills) {
-    const opt=document.createElement("option");
-    opt.value = b.id;
-    const due = b.next_due_date ? ` | Próximo: ${b.next_due_date}` : "";
-    opt.textContent = `${b.name}${due}`;
-    sel.appendChild(opt);
-  }
-}
-
-/* ===========================
-   Status + Render
-   =========================== */
-let cache = { bills: [], currency:"USD", defaultRemindDays:7 };
-let editingId = null;
-let payingBillId = null;
-let histBillId = null;
-
 function statusForBill(b, remindDays, today) {
   const daysLeft = daysBetween(today, b.next_due_date);
   if (daysLeft < 0) return { key:"overdue", label:`Vencido (${Math.abs(daysLeft)}d)`, daysLeft };
@@ -779,8 +773,8 @@ async function refresh() {
   cache.bills = await listBills();
   cache.bills.sort((a,b)=> (a.next_due_date > b.next_due_date ? 1 : -1));
 
-  await rebuildNameSelect();
-  rebuildPayBillSelect();
+  await rebuildBillNameCombo($("billNameSelect")?.value || "");
+  rebuildPayBillSelect($("payBillSelect")?.value || "");
 
   render();
   await notifyDueBillsWhileOpen();
@@ -881,12 +875,12 @@ function render() {
 }
 
 /* ===========================
-   Add/Edit bill (con dropdown)
+   Add/Edit
    =========================== */
 function clearForm() {
   editingId = null;
   $("editId").textContent = "Nuevo";
-  $("nameSelect").value = "";
+  $("billNameSelect").value = "";
   $("amount").value = "";
   $("dueDay").value = "1";
   $("category").value = "";
@@ -900,10 +894,7 @@ function beginEdit(billId) {
   if (!b) return;
   editingId = billId;
   $("editId").textContent = billId;
-
-  // seleccionar el nombre en dropdown
-  $("nameSelect").value = b.name || "";
-
+  $("billNameSelect").value = b.name || "";
   $("amount").value = b.amount_monthly ?? "";
   $("dueDay").value = String(b.due_day ?? 1);
   $("category").value = b.category || "";
@@ -916,7 +907,7 @@ function beginEdit(billId) {
 $("billForm").onsubmit = async (ev)=>{
   ev.preventDefault();
 
-  const name = ($("nameSelect").value || "").trim();
+  const name = ($("billNameSelect").value || "").trim();
   const amount = Number($("amount").value);
   const dueDay = Number($("dueDay").value);
 
@@ -924,13 +915,12 @@ $("billForm").onsubmit = async (ev)=>{
   if (!Number.isFinite(amount) || amount <= 0) return toast("Monto inválido");
   if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) return toast("Día de vencimiento inválido");
 
-  // guardar moneda
   const currency = $("currency").value;
   await setSetting("currency", currency);
   cache.currency = currency;
   $("currencyLabel").textContent = currency;
 
-  // guardar nombre a librería
+  // asegurar que el nombre quede en la librería
   const lib = await getNameLibrary();
   await setNameLibrary([...lib, name]);
 
@@ -955,7 +945,7 @@ $("billForm").onsubmit = async (ev)=>{
 $("btnClear").onclick = ()=>{ clearForm(); toast("Formulario limpio"); };
 
 /* ===========================
-   Pay flow (con dropdown)
+   Pay flow
    =========================== */
 function resetPayBox() {
   payingBillId = null;
@@ -966,7 +956,6 @@ function resetPayBox() {
   $("payNote").value = "";
   $("btnConfirmPay").disabled = true;
 }
-
 function setPayFromBill(b) {
   payingBillId = b.id;
   $("payBillName").textContent = b.name;
@@ -975,16 +964,13 @@ function setPayFromBill(b) {
   $("payNote").value = "";
   $("btnConfirmPay").disabled = false;
 }
-
 function beginPay(billId) {
   const b = cache.bills.find(x=>x.id===billId);
   if (!b) return;
-
-  $("payBillSelect").value = billId; // sincroniza dropdown
+  $("payBillSelect").value = billId;
   setPayFromBill(b);
   toast("Listo para marcar pagado");
 }
-
 $("btnPayLoad").onclick = ()=>{
   const id = $("payBillSelect").value;
   const b = cache.bills.find(x=>x.id===id);
@@ -992,7 +978,6 @@ $("btnPayLoad").onclick = ()=>{
   setPayFromBill(b);
   toast("Bill cargado");
 };
-
 $("payBillSelect").onchange = ()=>{
   const id = $("payBillSelect").value;
   if (!id) return resetPayBox();
@@ -1036,8 +1021,6 @@ $("btnConfirmPay").onclick = async ()=>{
   try { await scheduleAllBills(); } catch {}
 };
 
-resetPayBox();
-
 /* ===========================
    History modal
    =========================== */
@@ -1060,7 +1043,6 @@ function closeHistory() {
 }
 async function renderHistory() {
   if (!histBillId) return;
-  const b = cache.bills.find(x=>x.id===histBillId);
   const pays = await listPaymentsByBill(histBillId);
   const total = pays.reduce((s,p)=>s + Number(p.amount_paid||0), 0);
 
@@ -1122,33 +1104,43 @@ $("btnHistClose").onclick = closeHistory;
 $("modalBack").onclick = (e)=>{ if (e.target === $("modalBack")) closeHistory(); };
 
 /* ===========================
-   Modal: agregar nombre
+   Modal: agregar nombre de bill
    =========================== */
-function openNameModal() {
-  $("newBillName").value = "";
-  $("nameHint").textContent = "—";
-  $("nameModalBack").classList.add("show");
-  setTimeout(()=>$("newBillName").focus(), 60);
+function openBillNameModal(target = "form") {
+  lastFocusTarget = target; // "form" o "pay"
+  $("billNameNew").value = "";
+  $("billNameHint").textContent = "—";
+  $("billNameModalBack").classList.add("show");
+  setTimeout(()=>$("billNameNew").focus(), 60);
 }
-function closeNameModal() {
-  $("nameModalBack").classList.remove("show");
+function closeBillNameModal() {
+  $("billNameModalBack").classList.remove("show");
 }
-$("btnAddName").onclick = openNameModal;
-$("btnNameClose").onclick = closeNameModal;
-$("nameModalBack").onclick = (e)=>{ if (e.target === $("nameModalBack")) closeNameModal(); };
 
-$("btnNameSave").onclick = async ()=>{
-  const n = ($("newBillName").value || "").trim();
-  if (!n) { $("nameHint").textContent = "Escribe un nombre."; return; }
+$("btnAddBillName").onclick = ()=>openBillNameModal("form");
+$("btnPayAddBill").onclick = ()=>openBillNameModal("pay");
+$("btnBillNameClose").onclick = closeBillNameModal;
+$("billNameModalBack").onclick = (e)=>{ if (e.target === $("billNameModalBack")) closeBillNameModal(); };
+
+$("btnBillNameSave").onclick = async ()=>{
+  const n = ($("billNameNew").value || "").trim();
+  if (!n) { $("billNameHint").textContent = "Escribe un nombre."; return; }
 
   const lib = await getNameLibrary();
-  const newLib = await setNameLibrary([...lib, n]);
-  await rebuildNameSelect();
+  await setNameLibrary([...lib, n]);
 
-  $("nameSelect").value = n;
-  $("nameHint").textContent = "Guardado ✅";
-  toast("Nombre agregado");
-  setTimeout(closeNameModal, 500);
+  await rebuildBillNameCombo(n);
+  $("billNameHint").textContent = "Guardado ✅";
+  toast("Nombre agregado. Ahora completa monto/vencimiento y guarda el bill.");
+
+  closeBillNameModal();
+
+  // si lo abriste desde “Pagar”, te manda al formulario para crearlo completo
+  if (lastFocusTarget === "pay") {
+    // limpia pago y enfoca el formulario
+    resetPayBox();
+    $("amount").focus();
+  }
 };
 
 /* ===========================
@@ -1166,6 +1158,7 @@ $("search").oninput = ()=>render();
 $("btnRefresh").onclick = ()=>refresh().then(()=>toast("Actualizado")).catch(()=>toast("Error"));
 
 $("btnNotif").onclick = enableNotifications;
+
 $("btnSchedule").onclick = async ()=>{
   await enableNotifications();
   const reg = await registerSW();
@@ -1175,7 +1168,7 @@ $("btnSchedule").onclick = async ()=>{
 };
 
 $("btnInstallTips").onclick = ()=>{
-  toast("Para notificaciones con app cerrada: abre en Chrome y elige 'Install app' / 'Agregar a pantalla de inicio'. Luego activa notificaciones y 'Programar alertas'.");
+  toast("Para notificaciones con app cerrada: abre en Chrome y elige 'Install app / Add to Home screen'. Luego activa notificaciones y 'Programar alertas'.");
 };
 
 /* ===========================
@@ -1183,7 +1176,7 @@ $("btnInstallTips").onclick = ()=>{
    =========================== */
 $("btnBackup").onclick = async ()=>{
   const payload = {
-    meta: { app:"fabre_bills", version:3, exported_at:new Date().toISOString() },
+    meta: { app:"fabre_bills", version:4, exported_at:new Date().toISOString() },
     settings: {
       currency: await getSetting("currency","USD"),
       defaultRemindDays: await getSetting("defaultRemindDays",7),
@@ -1208,6 +1201,7 @@ $("btnBackup").onclick = async ()=>{
 
 const fileImport = $("fileImport");
 $("btnImport").onclick = ()=>fileImport.click();
+
 fileImport.onchange = async ()=>{
   const f = fileImport.files?.[0];
   if (!f) return;
@@ -1274,12 +1268,14 @@ $("btnReset").onclick = async ()=>{
   await registerSW();
   await refresh();
   clearForm();
+  resetPayBox();
 
   setInterval(()=>{ notifyDueBillsWhileOpen().catch(()=>{}); }, 60 * 1000);
 })();
 </script>
 </body>
 </html>
+
 
 
 
