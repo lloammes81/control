@@ -84,6 +84,43 @@
     .modalBack.show{display:flex}
   </style>
 </head>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  // ✅ TU PROYECTO (correcto)
+  const SUPABASE_URL = "https://bgyfrhcrqnoayqrntzom.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx"; // anon/public
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  window.supabase = supabase;
+
+  async function verificarConexionSupabase() {
+    const box = document.getElementById("dbConnStatus");
+    if (!box) return;
+
+    try {
+      // ✅ usamos una tabla que existe: bills (PK id)
+      const { error } = await supabase.from("bills").select("id").limit(1);
+      if (error) throw error;
+
+      const hora = new Date().toLocaleTimeString();
+      box.textContent = `🟢 Conectado — ${hora}`;
+      box.style.background = "#043";
+      box.style.borderColor = "#0f5";
+    } catch (e) {
+      console.error("Supabase error:", e);
+      box.textContent = "🔴 Sin conexión / sin permisos (RLS)";
+      box.style.background = "#400";
+      box.style.borderColor = "#f55";
+    }
+  }
+
+  // Ejecuta al cargar
+  verificarConexionSupabase();
+
+  // Opcional: re-verifica cada 20 segundos
+  setInterval(verificarConexionSupabase, 20000);
+</script>
 
 <body>
   <div id="dbConnStatus" style="
