@@ -1,0 +1,18 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="28" fill="#0b1220"/>
+
+  <path d="M60 40h80v120l-15-10-15 10-15-10-15 10V40z"
+        fill="#111a2e" stroke="#4da3ff" stroke-width="4"/>
+
+  <path d="M75 85H125 M75 105H125"
+        stroke="#4da3ff" stroke-width="4" stroke-linecap="round"/>
+
+  <circle cx="100" cy="135" r="20" fill="#2ee59d"/>
+
+  <path d="M90 135 l8 8 l14 -14"
+        stroke="#0b1220" stroke-width="4" stroke-linecap="round"
+        fill="none"/>
+
+  <text x="100" y="185" text-anchor="middle"
+        fill="#ffffff" opacity="0.85" font-size="20">Bills Control</text>
+</svg>
