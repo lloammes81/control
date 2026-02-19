@@ -395,30 +395,34 @@
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
   // ✅ CAMBIA SOLO SI TU PROYECTO ES OTRO
-  const SUPABASE_URL = "https://bgyfrhrcrnqoayqrntzom.supabase.co";
+  // ✅ FIX: URL corregida (la tuya tenía letras cambiadas y daba error)
+  const SUPABASE_URL = "https://bgyfrhcrqnoayqrntzom.supabase.co";
   const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx"; // anon/public
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   window.supabase = supabase;
+
   /* ======================================
      FUNCIÓN PARA VERIFICAR CONEXIÓN
+     ✅ FIX: probar contra tabla "bills" (porque "settings" puede no existir)
   ====================================== */
   async function verificarConexionSupabase() {
     const box = document.getElementById("dbConnStatus");
 
     try {
-      const { error } = await supabase.from("settings").select("key").limit(1);
-
+      const { error } = await supabase.from("bills").select("id").limit(1);
       if (error) throw error;
 
       const hora = new Date().toLocaleTimeString("es-US", { hour: "2-digit", minute: "2-digit" });
-
       box.textContent = `🟢 Conectado — Última sync: ${hora}`;
       box.style.background = "#043";
       box.style.borderColor = "#0f5";
-
     } catch (e) {
-      box.textContent = "🔴 Sin conexión a la base de datos";
+      const msg = String(e?.message || e || "").toLowerCase();
+      const extra = (msg.includes("row-level security") || msg.includes("rls") || msg.includes("permission"))
+        ? " (RLS bloqueando: crea policy o desactiva RLS en bills/payments)"
+        : "";
+      box.textContent = "🔴 Sin conexión a la base de datos" + extra;
       box.style.background = "#400";
       box.style.borderColor = "#f55";
     }
@@ -1488,7 +1492,6 @@ $("btnReset").onclick = async ()=>{
 </script>
 </body>
 </html>
-
 
 
 
