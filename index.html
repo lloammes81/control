@@ -35,7 +35,10 @@
     button.primary{background:rgba(77,163,255,.22);border-color:rgba(77,163,255,.35)}
     button.danger{background:rgba(255,77,109,.18);border-color:rgba(255,77,109,.35)}
     button.ok{background:rgba(46,229,157,.16);border-color:rgba(46,229,157,.30)}
-    button.iconBtn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;font-weight:900;line-height:1;padding:0;border-radius:12px}
+    button.iconBtn{
+      width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;
+      font-weight:900;line-height:1;padding:0;border-radius:12px;
+    }
     .card{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
     .hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
     .bd{padding:16px}
@@ -60,11 +63,22 @@
     .pill.overdue{border-color:rgba(255,77,109,.55);background:rgba(255,77,109,.12)}
     .pill.soon{border-color:rgba(77,163,255,.55);background:rgba(77,163,255,.12)}
     .pill.ok{border-color:rgba(46,229,157,.55);background:rgba(46,229,157,.10)}
-    .toast{position:fixed;right:16px;bottom:16px;background:rgba(17,26,46,.95);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);display:none;max-width:560px;z-index:9999}
+    .toast{position:fixed;right:16px;bottom:16px;background:rgba(17,26,46,.95);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);display:none;max-width:560px}
     .toast.show{display:block}
     .banner{padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-    .modalBack{position:fixed; inset:0; background:rgba(0,0,0,.55);display:none; align-items:center; justify-content:center; padding:14px;z-index:9998}
-    .modal{width:min(980px, 100%);max-height:88vh;overflow:auto;background:rgba(17,26,46,.98);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+    .modalBack{
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      display:none; align-items:center; justify-content:center; padding:14px;
+    }
+    .modal{
+      width:min(980px, 100%);
+      max-height:88vh;
+      overflow:auto;
+      background:rgba(17,26,46,.98);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+    }
     .modal.smallModal{width:min(520px,100%);}
     .modal .hd{position:sticky;top:0;background:rgba(17,26,46,.98);z-index:2}
     .modalBack.show{display:flex}
@@ -73,15 +87,21 @@
 
 <body>
   <div id="dbConnStatus" style="
-    position: fixed; top: 8px; right: 8px;
-    background: #222; border: 1px solid #555;
-    padding: 8px 14px; border-radius: 12px; color: white;
-    font-size: 13px; z-index: 10000;">
-    Verificando conexión…
-  </div>
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  background: #222;
+  border: 1px solid #555;
+  padding: 8px 14px;
+  border-radius: 12px;
+  color: white;
+  font-size: 13px;
+  z-index: 9999;
+">
+  Verificando conexión…
+</div>
 
-  <img src="logo.svg" width="80" alt="Bills Control Logo" style="border-radius:16px; margin:16px 0 0 18px;">
-
+  <img src="logo.svg" width="80" alt="Bills Control Logo" style="border-radius:16px;">
   <div class="wrap">
     <header>
       <div>
@@ -89,9 +109,9 @@
         <div class="muted">Nombre del bill con combo + botón “+” | Vencimiento con combo | Historial + PWA.</div>
       </div>
       <div class="toolbar">
-        <button class="ok" id="btnInstallTips" type="button">Cómo instalar</button>
-        <button class="ok" id="btnNotif" type="button">Activar notificaciones</button>
-        <button class="ok" id="btnSchedule" type="button">Programar alertas</button>
+        <button class="ok" id="btnInstallTips">Cómo instalar</button>
+        <button class="ok" id="btnNotif">Activar notificaciones</button>
+        <button class="ok" id="btnSchedule">Programar alertas</button>
 
         <div class="chip">
           <label for="filter">Filtro</label>
@@ -151,7 +171,9 @@
           </div>
         </div>
 
-        <div class="small" style="margin-top:10px">Datos guardados en Supabase (online).</div>
+        <div class="small" style="margin-top:10px">
+          Datos guardados en Supabase (online).
+        </div>
       </div>
     </div>
 
@@ -164,6 +186,8 @@
         </div>
         <div class="bd">
           <form id="billForm">
+
+            <!-- Nombre: combo + botón + -->
             <div style="grid-column:1/-1;">
               <div class="muted">Nombre del bill</div>
               <div class="row" style="margin-top:8px;">
@@ -178,6 +202,7 @@
               <input id="amount" type="number" step="0.01" min="0" placeholder="Ej: 120.50" required>
             </div>
 
+            <!-- Vencimiento: combo día 1..31 -->
             <div>
               <div class="muted">Día de vencimiento (cada mes)</div>
               <select id="dueDay" required></select>
@@ -200,7 +225,7 @@
 
             <div class="row">
               <input id="category" type="text" placeholder="Categoría (opcional): Utilities, Rent, Insurance..." style="flex:1;min-width:240px;" maxlength="40">
-              <input id="vendor" type="text" placeholder="Proveedor (opcional): FPL, AT&T..." style="width:260px;" maxlength="60">
+              <input id="vendor" type="text" placeholder="Proveedor (opcional): FPL, AT&amp;T..." style="width:260px;" maxlength="60">
             </div>
 
             <div class="row">
@@ -243,7 +268,7 @@
 
           <div style="margin-top:10px" class="row">
             <input id="payNote" type="text" placeholder="Nota (opcional)" style="flex:1;min-width:240px;" maxlength="120">
-            <button class="ok" id="btnConfirmPay" type="button" disabled>Confirmar pago</button>
+            <button class="ok" id="btnConfirmPay" disabled>Confirmar pago</button>
           </div>
 
           <div class="muted" style="margin-top:10px">
@@ -259,7 +284,7 @@
         <div class="muted">Bills</div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <input id="search" type="text" placeholder="Buscar (nombre, categoría, proveedor)" style="min-width:280px;">
-          <button id="btnRefresh" type="button">Actualizar</button>
+          <button id="btnRefresh">Actualizar</button>
         </div>
       </div>
       <div class="bd">
@@ -297,8 +322,8 @@
           <div class="small" id="histTitle">—</div>
         </div>
         <div class="actions">
-          <button id="btnHistCSV" type="button">Exportar CSV</button>
-          <button class="danger" id="btnHistClose" type="button">Cerrar</button>
+          <button id="btnHistCSV">Exportar CSV</button>
+          <button class="danger" id="btnHistClose">Cerrar</button>
         </div>
       </div>
       <div class="bd">
@@ -332,7 +357,7 @@
           <div class="small">Esto lo agrega al combo. Luego crea el bill completo (monto + vencimiento) y guarda.</div>
         </div>
         <div class="actions">
-          <button class="danger" id="btnBillNameClose" type="button">Cerrar</button>
+          <button class="danger" id="btnBillNameClose">Cerrar</button>
         </div>
       </div>
       <div class="bd">
@@ -351,20 +376,20 @@
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    // ======= CONFIG SUPABASE =======
+    // ====== CONFIG SUPABASE ======
     const SUPABASE_URL = "https://bgyfrhcrqnoayqrntzom.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx"; // anon/public key
-    const SB_TABLE_BILLS = "bills";
-    const SB_TABLE_PAYMENTS = "payments";
+    const SUPABASE_KEY = "sb_publishable_eqw-StLRlDsZdALPoUTrfw_nYJ7uXCx"; // anon/public
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     window.supabase = supabase;
 
-    // ======= UTIL =======
+    const SB_TABLE_BILLS    = "bills";
+    const SB_TABLE_PAYMENTS = "payments";
+
+    // ====== UI helpers ======
     const $ = (id)=>document.getElementById(id);
     const toast = (m)=>{
       const t=$("toast");
-      if(!t) return;
       t.textContent=m;
       t.classList.add("show");
       setTimeout(()=>t.classList.remove("show"),2400);
@@ -427,28 +452,31 @@
         .replaceAll('"',"&quot;").replaceAll("'","&#039;");
     }
 
-    // ======= SETTINGS (localStorage simple) =======
-    const getSetting = (key, fallback)=> {
-      try {
-        const v = localStorage.getItem("fabre_"+key);
+    // ====== DB Settings (localStorage simple) ======
+    async function getSetting(key, fallback){
+      try{
+        const v = localStorage.getItem("fabre_bills_"+key);
         return v === null ? fallback : JSON.parse(v);
-      } catch { return fallback; }
-    };
-    const setSetting = (key, value)=> {
-      localStorage.setItem("fabre_"+key, JSON.stringify(value));
-    };
+      }catch{
+        return fallback;
+      }
+    }
+    async function setSetting(key, value){
+      localStorage.setItem("fabre_bills_"+key, JSON.stringify(value));
+      return true;
+    }
 
-    // ======= SUPABASE PING + CONN BADGE =======
-    async function sbPing() {
+    // ====== Supabase ping + badge ======
+    async function sbPing(){
       const { error } = await supabase.from(SB_TABLE_BILLS).select("id").limit(1);
       if (error) throw error;
     }
-
     async function verificarConexionSupabase() {
-      const box = $("dbConnStatus");
+      const box = document.getElementById("dbConnStatus");
       if (!box) return;
       try {
-        await sbPing();
+        const { error } = await supabase.from(SB_TABLE_BILLS).select("id").limit(1);
+        if (error) throw error;
         const hora = new Date().toLocaleTimeString("es-US", { hour: "2-digit", minute: "2-digit" });
         box.textContent = `🟢 Conectado — ${hora}`;
         box.style.background = "#043";
@@ -461,82 +489,77 @@
       }
     }
 
-    // ======= CRUD =======
-    async function putBill(bill) {
+    // ====== CRUD Supabase ======
+    async function putBill(bill){
       await sbPing();
       const { error } = await supabase.from(SB_TABLE_BILLS).upsert(bill, { onConflict: "id" });
       if (error) throw error;
       return true;
     }
-    async function listBills() {
+    async function listBills(){
       await sbPing();
       const { data, error } = await supabase.from(SB_TABLE_BILLS).select("*");
       if (error) throw error;
       return data || [];
     }
-    async function deleteBill(billId) {
+    async function deleteBill(billId){
       await sbPing();
       await supabase.from(SB_TABLE_PAYMENTS).delete().eq("bill_id", billId);
       const { error } = await supabase.from(SB_TABLE_BILLS).delete().eq("id", billId);
       if (error) throw error;
       return true;
     }
-    async function addPayment(payment) {
+    async function addPayment(payment){
       await sbPing();
       const { error } = await supabase.from(SB_TABLE_PAYMENTS).upsert(payment, { onConflict: "id" });
       if (error) throw error;
       return true;
     }
-    async function listPaymentsByBill(billId) {
+    async function listPaymentsByBill(billId){
       await sbPing();
       const { data, error } = await supabase.from(SB_TABLE_PAYMENTS).select("*").eq("bill_id", billId);
       if (error) throw error;
       return (data || []).sort((a,b)=> (a.pay_date > b.pay_date ? -1 : 1));
     }
-    async function deletePayment(paymentId) {
+    async function deletePayment(paymentId){
       await sbPing();
       const { error } = await supabase.from(SB_TABLE_PAYMENTS).delete().eq("id", paymentId);
       if (error) throw error;
       return true;
     }
 
-    // ======= APP STATE =======
-    let cache = { bills: [], currency:"USD", defaultRemindDays:7 };
-    let editingId = null;
-    let payingBillId = null;
-    let histBillId = null;
-    let lastFocusTarget = "form";
-
-    // ======= DROPDOWNS =======
+    // ====== Name library + Due-day options ======
     function buildDueDayOptions() {
       const sel = $("dueDay");
-      if(!sel) return;
       sel.innerHTML = "";
-      for (let i=1;i<=31;i++) {
+      for (let i=1;i<=31;i++){
         const opt=document.createElement("option");
         opt.value=String(i);
         opt.textContent=`Día ${i}`;
         sel.appendChild(opt);
       }
     }
-
-    function getNameLibrary() {
-      return getSetting("billNameLibrary", []);
-    }
-    function setNameLibrary(names) {
+    async function getNameLibrary(){ return await getSetting("billNameLibrary", []); }
+    async function setNameLibrary(names) {
       const uniq = Array.from(new Set((names||[]).map(x=>String(x||"").trim()).filter(Boolean)));
       uniq.sort((a,b)=>a.localeCompare(b));
-      setSetting("billNameLibrary", uniq);
+      await setSetting("billNameLibrary", uniq);
       return uniq;
     }
 
+    // ====== App state ======
+    let cache = { bills: [], currency:"USD", defaultRemindDays:7 };
+    let editingId = null;
+    let payingBillId = null;
+    let histBillId = null;
+    let lastFocusTarget = "form";
+
     async function rebuildBillNameCombo(selectedValue = "") {
-      const lib = getNameLibrary();
+      const lib = await getNameLibrary();
       const dbNames = (cache.bills || []).map(b=>b.name).filter(Boolean);
-      const all = setNameLibrary([...lib, ...dbNames]);
+      const all = await setNameLibrary([...lib, ...dbNames]);
 
       const sel = $("billNameSelect");
-      if(!sel) return;
       sel.innerHTML = "";
 
       const opt0 = document.createElement("option");
@@ -555,7 +578,6 @@
 
     function rebuildPayBillSelect(selectedId = "") {
       const sel = $("payBillSelect");
-      if(!sel) return;
       sel.innerHTML = "";
 
       const opt0 = document.createElement("option");
@@ -573,7 +595,7 @@
       sel.value = selectedId || "";
     }
 
-    // ======= NOTIFICATIONS (básico) =======
+    // ====== Notifications (solo mientras app abierta) ======
     async function enableNotifications() {
       if (!("Notification" in window)) return toast("Este navegador no soporta notificaciones");
       const perm = await Notification.requestPermission();
@@ -588,7 +610,7 @@
       } catch {}
     }
     async function notifyDueBillsWhileOpen() {
-      const remindDays = Number(getSetting("defaultRemindDays", 7));
+      const remindDays = Number(await getSetting("defaultRemindDays", 7));
       const today = todayISO();
 
       for (const b of cache.bills) {
@@ -609,7 +631,7 @@
       }
     }
 
-    // ======= RENDER =======
+    // ====== Render + KPIs ======
     function statusForBill(b, remindDays, today) {
       const daysLeft = daysBetween(today, b.next_due_date);
       if (daysLeft < 0) return { key:"overdue", label:`Vencido (${Math.abs(daysLeft)}d)`, daysLeft };
@@ -617,38 +639,53 @@
       return { key:"ok", label:`Al día (${daysLeft}d)`, daysLeft };
     }
 
+    async function refresh() {
+      cache.currency = await getSetting("currency","USD");
+      cache.defaultRemindDays = Number(await getSetting("defaultRemindDays", 7));
+      $("currency").value = cache.currency;
+      $("currencyLabel").textContent = cache.currency;
+      $("remindDays").value = String(cache.defaultRemindDays);
+
+      cache.bills = await listBills();
+      cache.bills.sort((a,b)=> (a.next_due_date > b.next_due_date ? 1 : -1));
+
+      await rebuildBillNameCombo($("billNameSelect")?.value || "");
+      rebuildPayBillSelect($("payBillSelect")?.value || "");
+
+      render();
+      await notifyDueBillsWhileOpen();
+    }
+
     function render() {
       const today = todayISO();
-      const remindDays = Number($("remindDays")?.value || cache.defaultRemindDays);
-      const filter = $("filter")?.value || "all";
-      const q = ($("search")?.value || "").trim().toLowerCase();
+      const remindDays = Number($("remindDays").value || cache.defaultRemindDays);
+      const filter = $("filter").value;
+      const q = ($("search").value || "").trim().toLowerCase();
 
       const totalMonthly = cache.bills.reduce((s,b)=> s + Number(b.amount_monthly||0), 0);
       let cOver=0, cSoon=0, cOk=0;
 
       for (const b of cache.bills) {
-        if(!b.next_due_date) continue;
         const st = statusForBill(b, remindDays, today);
         if (st.key==="overdue") cOver++;
         else if (st.key==="soon") cSoon++;
         else cOk++;
       }
 
-      if($("kTotalMonthly")) $("kTotalMonthly").textContent = fmtMoney(totalMonthly, cache.currency);
-      if($("kOverdue")) $("kOverdue").textContent = String(cOver);
-      if($("kSoon")) $("kSoon").textContent = String(cSoon);
-      if($("kOk")) $("kOk").textContent = String(cOk);
-      if($("kOverdueSub")) $("kOverdueSub").textContent = cOver ? "Tienes bills vencidos" : "—";
-      if($("kSoonSub")) $("kSoonSub").textContent = cSoon ? `Vencen en <= ${remindDays} días` : "—";
+      $("kTotalMonthly").textContent = fmtMoney(totalMonthly, cache.currency);
+      $("kOverdue").textContent = String(cOver);
+      $("kSoon").textContent = String(cSoon);
+      $("kOk").textContent = String(cOk);
+      $("kOverdueSub").textContent = cOver ? "Tienes bills vencidos" : "—";
+      $("kSoonSub").textContent = cSoon ? `Vencen en <= ${remindDays} días` : "—";
 
       const bannerParts = [];
       if (cOver) bannerParts.push(`⚠️ ${cOver} vencido(s)`);
       if (cSoon) bannerParts.push(`⏳ ${cSoon} por vencer`);
       if (!bannerParts.length) bannerParts.push("✅ Todo al día");
-      if($("bannerText")) $("bannerText").textContent = bannerParts.join(" | ");
+      $("bannerText").textContent = bannerParts.join(" | ");
 
       const items = cache.bills.filter(b=>{
-        if(!b.next_due_date) return true;
         const st = statusForBill(b, remindDays, today);
         if (filter !== "all" && st.key !== filter) return false;
         if (q) {
@@ -659,16 +696,15 @@
       });
 
       const tb = $("tbody");
-      if(!tb) return;
       tb.innerHTML = "";
 
       for (const b of items) {
-        const st = b.next_due_date ? statusForBill(b, remindDays, today) : { key:"ok", label:"—", daysLeft: 999 };
+        const st = statusForBill(b, remindDays, today);
         const pillClass = st.key==="overdue" ? "pill overdue" : st.key==="soon" ? "pill soon" : "pill ok";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><span class="${pillClass}">${escapeHtml(st.label)}</span></td>
+          <td><span class="${pillClass}">${st.label}</span></td>
           <td>
             <div><b>${escapeHtml(b.name)}</b></div>
             <div class="muted">${escapeHtml(b.category||"")}</div>
@@ -681,10 +717,10 @@
           <td>${escapeHtml(b.vendor || "")}</td>
           <td>
             <div class="actions">
-              <button class="ok" data-pay="${b.id}" type="button">Pagar</button>
-              <button data-hist="${b.id}" type="button">Historial</button>
-              <button data-edit="${b.id}" type="button">Editar</button>
-              <button class="danger" data-del="${b.id}" type="button">Borrar</button>
+              <button class="ok" data-pay="${b.id}">Pagar</button>
+              <button data-hist="${b.id}">Historial</button>
+              <button data-edit="${b.id}">Editar</button>
+              <button class="danger" data-del="${b.id}">Borrar</button>
             </div>
           </td>
         `;
@@ -714,90 +750,173 @@
       });
     }
 
-    async function refresh() {
-      cache.currency = getSetting("currency","USD");
-      cache.defaultRemindDays = Number(getSetting("defaultRemindDays", 7));
-      if($("currency")) $("currency").value = cache.currency;
-      if($("currencyLabel")) $("currencyLabel").textContent = cache.currency;
-      if($("remindDays")) $("remindDays").value = String(cache.defaultRemindDays);
-
-      cache.bills = await listBills();
-      cache.bills.sort((a,b)=> (String(a.next_due_date||"") > String(b.next_due_date||"") ? 1 : -1));
-
-      await rebuildBillNameCombo($("billNameSelect")?.value || "");
-      rebuildPayBillSelect($("payBillSelect")?.value || "");
-
-      render();
-      await notifyDueBillsWhileOpen();
-    }
-
-    // ======= FORM =======
+    // ====== Add/Edit ======
     function clearForm() {
       editingId = null;
-      if($("editId")) $("editId").textContent = "Nuevo";
-      if($("billNameSelect")) $("billNameSelect").value = "";
-      if($("amount")) $("amount").value = "";
-      if($("dueDay")) $("dueDay").value = "1";
-      if($("category")) $("category").value = "";
-      if($("vendor")) $("vendor").value = "";
-      if($("method")) $("method").value = "Cash";
-      if($("formHint")) $("formHint").textContent = "—";
+      $("editId").textContent = "Nuevo";
+      $("billNameSelect").value = "";
+      $("amount").value = "";
+      $("dueDay").value = "1";
+      $("category").value = "";
+      $("vendor").value = "";
+      $("method").value = "Cash";
+      $("formHint").textContent = "—";
     }
 
     function beginEdit(billId) {
       const b = cache.bills.find(x=>x.id===billId);
       if (!b) return;
       editingId = billId;
-      if($("editId")) $("editId").textContent = billId;
-      if($("billNameSelect")) $("billNameSelect").value = b.name || "";
-      if($("amount")) $("amount").value = b.amount_monthly ?? "";
-      if($("dueDay")) $("dueDay").value = String(b.due_day ?? 1);
-      if($("category")) $("category").value = b.category || "";
-      if($("vendor")) $("vendor").value = b.vendor || "";
-      if($("method")) $("method").value = b.method || "Cash";
-      if($("formHint")) $("formHint").textContent = "Editando. Guarda para aplicar cambios.";
+      $("editId").textContent = billId;
+      $("billNameSelect").value = b.name || "";
+      $("amount").value = b.amount_monthly ?? "";
+      $("dueDay").value = String(b.due_day ?? 1);
+      $("category").value = b.category || "";
+      $("vendor").value = b.vendor || "";
+      $("method").value = b.method || "Cash";
+      $("formHint").textContent = "Editando. Guarda para aplicar cambios.";
       toast("Modo edición");
     }
 
+    $("billForm").onsubmit = async (ev)=>{
+      ev.preventDefault();
+
+      const name = ($("billNameSelect").value || "").trim();
+      const amount = Number($("amount").value);
+      const dueDay = Number($("dueDay").value);
+
+      if (!name) return toast("Selecciona (o agrega) el nombre del bill");
+      if (!Number.isFinite(amount) || amount <= 0) return toast("Monto inválido");
+      if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) return toast("Día de vencimiento inválido");
+
+      const currency = $("currency").value;
+      await setSetting("currency", currency);
+      cache.currency = currency;
+      $("currencyLabel").textContent = currency;
+
+      const lib = await getNameLibrary();
+      await setNameLibrary([...lib, name]);
+
+      const bill = editingId ? (cache.bills.find(x=>x.id===editingId) || { id: editingId }) : { id: uid() };
+
+      bill.name = name;
+      bill.amount_monthly = Number(amount.toFixed(2));
+      bill.due_day = dueDay;
+      bill.category = $("category").value.trim() || null;
+      bill.vendor = $("vendor").value.trim() || null;
+      bill.method = $("method").value;
+
+      if (!bill.next_due_date) bill.next_due_date = computeInitialNextDue(dueDay);
+
+      await putBill(bill);
+
+      toast(editingId ? "Bill actualizado" : "Bill creado");
+      clearForm();
+      await refresh();
+    };
+
+    $("btnClear").onclick = ()=>{ clearForm(); toast("Formulario limpio"); };
+
+    // ====== Pay flow ======
     function resetPayBox() {
       payingBillId = null;
-      if($("payBillName")) $("payBillName").textContent = "—";
-      if($("payBillSelect")) $("payBillSelect").value = "";
-      if($("payDate")) $("payDate").value = todayISO();
-      if($("payAmount")) $("payAmount").value = "";
-      if($("payNote")) $("payNote").value = "";
-      if($("btnConfirmPay")) $("btnConfirmPay").disabled = true;
+      $("payBillName").textContent = "—";
+      $("payBillSelect").value = "";
+      $("payDate").value = todayISO();
+      $("payAmount").value = "";
+      $("payNote").value = "";
+      $("btnConfirmPay").disabled = true;
     }
     function setPayFromBill(b) {
       payingBillId = b.id;
-      if($("payBillName")) $("payBillName").textContent = b.name;
-      if($("payDate")) $("payDate").value = todayISO();
-      if($("payAmount")) $("payAmount").value = String(b.amount_monthly ?? "");
-      if($("payNote")) $("payNote").value = "";
-      if($("btnConfirmPay")) $("btnConfirmPay").disabled = false;
+      $("payBillName").textContent = b.name;
+      $("payDate").value = todayISO();
+      $("payAmount").value = String(b.amount_monthly ?? "");
+      $("payNote").value = "";
+      $("btnConfirmPay").disabled = false;
     }
     function beginPay(billId) {
       const b = cache.bills.find(x=>x.id===billId);
       if (!b) return;
-      if($("payBillSelect")) $("payBillSelect").value = billId;
+      $("payBillSelect").value = billId;
       setPayFromBill(b);
       toast("Listo para marcar pagado");
     }
+    $("btnPayLoad").onclick = ()=>{
+      const id = $("payBillSelect").value;
+      const b = cache.bills.find(x=>x.id===id);
+      if (!b) return toast("Selecciona un bill");
+      setPayFromBill(b);
+      toast("Bill cargado");
+    };
+    $("payBillSelect").onchange = ()=>{
+      const id = $("payBillSelect").value;
+      if (!id) return resetPayBox();
+      const b = cache.bills.find(x=>x.id===id);
+      if (!b) return resetPayBox();
+      setPayFromBill(b);
+    };
 
-    // ======= HISTORY MODAL =======
-    function openModal() { $("modalBack")?.classList.add("show"); }
-    function closeModal() { $("modalBack")?.classList.remove("show"); }
+    $("btnConfirmPay").onclick = async ()=>{
+      if (!payingBillId) return;
 
+      const b = cache.bills.find(x=>x.id===payingBillId);
+      if (!b) return;
+
+      const payDate = $("payDate").value || todayISO();
+      const payAmount = Number($("payAmount").value);
+      if (!Number.isFinite(payAmount) || payAmount <= 0) return toast("Monto pagado inválido");
+
+      const payment = {
+        id: uid(),
+        bill_id: b.id,
+        bill_name: b.name,
+        pay_date: payDate,
+        amount_paid: Number(payAmount.toFixed(2)),
+        note: ($("payNote").value||"").trim() || null,
+        created_at: new Date().toISOString()
+      };
+      await addPayment(payment);
+
+      b.last_paid_date = payDate;
+      b.last_paid_amount = Number(payAmount.toFixed(2));
+      b.next_due_date = computeNextDueAfterPay(b.next_due_date, b.due_day);
+      b.last_notified_date = null;
+
+      await putBill(b);
+
+      toast(`Pagado. Próximo: ${b.next_due_date}`);
+      resetPayBox();
+      await refresh();
+    };
+
+    // ====== History modal ======
+    function openModal() { $("modalBack").classList.add("show"); }
+    function closeModal() { $("modalBack").classList.remove("show"); }
+
+    async function openHistory(billId) {
+      const b = cache.bills.find(x=>x.id===billId);
+      if (!b) return;
+
+      histBillId = billId;
+      $("histTitle").textContent = `${b.name} | Monto mensual: ${fmtMoney(b.amount_monthly, cache.currency)} | Próximo: ${b.next_due_date}`;
+      await renderHistory();
+      openModal();
+    }
+    function closeHistory() {
+      histBillId = null;
+      $("histBody").innerHTML = "";
+      closeModal();
+    }
     async function renderHistory() {
       if (!histBillId) return;
       const pays = await listPaymentsByBill(histBillId);
       const total = pays.reduce((s,p)=>s + Number(p.amount_paid||0), 0);
 
-      if($("histTotal")) $("histTotal").textContent = fmtMoney(total, cache.currency);
-      if($("histCount")) $("histCount").textContent = String(pays.length);
+      $("histTotal").textContent = fmtMoney(total, cache.currency);
+      $("histCount").textContent = String(pays.length);
 
       const tb = $("histBody");
-      if(!tb) return;
       tb.innerHTML = "";
       for (const p of pays) {
         const tr = document.createElement("tr");
@@ -805,7 +924,7 @@
           <td class="mono">${escapeHtml(p.pay_date)}</td>
           <td class="mono">${fmtMoney(p.amount_paid, cache.currency)}</td>
           <td>${escapeHtml(p.note || "")}</td>
-          <td><button class="danger" data-delpay="${p.id}" type="button">Borrar</button></td>
+          <td><button class="danger" data-delpay="${p.id}">Borrar</button></td>
         `;
         tb.appendChild(tr);
       }
@@ -821,23 +940,7 @@
       });
     }
 
-    async function openHistory(billId) {
-      const b = cache.bills.find(x=>x.id===billId);
-      if (!b) return;
-
-      histBillId = billId;
-      if($("histTitle")) $("histTitle").textContent = `${b.name} | Monto mensual: ${fmtMoney(b.amount_monthly, cache.currency)} | Próximo: ${b.next_due_date || "—"}`;
-      await renderHistory();
-      openModal();
-    }
-    function closeHistory() {
-      histBillId = null;
-      if($("histBody")) $("histBody").innerHTML = "";
-      closeModal();
-    }
-
-    // ======= CSV =======
-    function downloadFile(filename, content, mime="application/octet-stream") {
+    function downloadFile(filename, content, mime="application/octet-stream"){
       const blob = new Blob([content],{type:mime});
       const url = URL.createObjectURL(blob);
       const a=document.createElement("a");
@@ -846,191 +949,97 @@
       URL.revokeObjectURL(url);
     }
 
-    // ======= MODAL NOMBRE BILL =======
-    function openBillNameModal(target="form") {
+    $("btnHistCSV").onclick = async ()=>{
+      if (!histBillId) return;
+      const b = cache.bills.find(x=>x.id===histBillId);
+      const pays = await listPaymentsByBill(histBillId);
+      const headers = ["bill","pay_date","amount_paid","note","currency"];
+      const rows = [headers.join(",")];
+      for (const p of pays.slice().reverse()) {
+        rows.push([
+          `"${(b?.name||"").replaceAll('"','""')}"`,
+          p.pay_date,
+          Number(p.amount_paid||0).toFixed(2),
+          `"${(p.note||"").replaceAll('"','""')}"`,
+          cache.currency
+        ].join(","));
+      }
+      downloadFile(`historial_${(b?.name||"bill").replaceAll(" ","_")}.csv`, rows.join("\n"), "text/csv");
+      toast("CSV del historial exportado");
+    };
+    $("btnHistClose").onclick = closeHistory;
+    $("modalBack").onclick = (e)=>{ if (e.target === $("modalBack")) closeHistory(); };
+
+    // ====== Modal: agregar nombre de bill ======
+    function openBillNameModal(target = "form") {
       lastFocusTarget = target;
-      if($("billNameNew")) $("billNameNew").value = "";
-      if($("billNameHint")) $("billNameHint").textContent = "—";
-      $("billNameModalBack")?.classList.add("show");
-      setTimeout(()=> $("billNameNew")?.focus(), 60);
+      $("billNameNew").value = "";
+      $("billNameHint").textContent = "—";
+      $("billNameModalBack").classList.add("show");
+      setTimeout(()=>$("billNameNew").focus(), 60);
     }
     function closeBillNameModal() {
-      $("billNameModalBack")?.classList.remove("show");
+      $("billNameModalBack").classList.remove("show");
     }
 
-    // ======= BOOT =======
-    function bindEvents() {
-      // Basic guards
-      const billForm = $("billForm");
-      if (billForm) {
-        billForm.onsubmit = async (ev)=>{
-          ev.preventDefault();
+    $("btnAddBillName").onclick = ()=>openBillNameModal("form");
+    $("btnPayAddBill").onclick = ()=>openBillNameModal("pay");
+    $("btnBillNameClose").onclick = closeBillNameModal;
+    $("billNameModalBack").onclick = (e)=>{ if (e.target === $("billNameModalBack")) closeBillNameModal(); };
 
-          const name = ($("billNameSelect")?.value || "").trim();
-          const amount = Number($("amount")?.value);
-          const dueDay = Number($("dueDay")?.value);
+    $("btnBillNameSave").onclick = async ()=>{
+      const n = ($("billNameNew").value || "").trim();
+      if (!n) { $("billNameHint").textContent = "Escribe un nombre."; return; }
 
-          if (!name) return toast("Selecciona (o agrega) el nombre del bill");
-          if (!Number.isFinite(amount) || amount <= 0) return toast("Monto inválido");
-          if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) return toast("Día de vencimiento inválido");
+      const lib = await getNameLibrary();
+      await setNameLibrary([...lib, n]);
 
-          const currency = $("currency")?.value || "USD";
-          setSetting("currency", currency);
-          cache.currency = currency;
-          if($("currencyLabel")) $("currencyLabel").textContent = currency;
+      await rebuildBillNameCombo(n);
+      $("billNameHint").textContent = "Guardado ✅";
+      toast("Nombre agregado. Ahora completa monto/vencimiento y guarda el bill.");
 
-          const lib = getNameLibrary();
-          setNameLibrary([...lib, name]);
+      closeBillNameModal();
 
-          const bill = editingId ? (cache.bills.find(x=>x.id===editingId) || { id: editingId }) : { id: uid() };
-          bill.name = name;
-          bill.amount_monthly = Number(amount.toFixed(2));
-          bill.due_day = dueDay;
-          bill.category = ($("category")?.value || "").trim() || null;
-          bill.vendor = ($("vendor")?.value || "").trim() || null;
-          bill.method = $("method")?.value || "Cash";
-
-          if (!bill.next_due_date) bill.next_due_date = computeInitialNextDue(dueDay);
-
-          await putBill(bill);
-          toast(editingId ? "Bill actualizado" : "Bill creado");
-          clearForm();
-          await refresh();
-        };
-      }
-
-      $("btnClear")?.addEventListener("click", ()=>{ clearForm(); toast("Formulario limpio"); });
-
-      $("btnPayLoad")?.addEventListener("click", ()=>{
-        const id = $("payBillSelect")?.value;
-        const b = cache.bills.find(x=>x.id===id);
-        if (!b) return toast("Selecciona un bill");
-        setPayFromBill(b);
-        toast("Bill cargado");
-      });
-
-      $("payBillSelect")?.addEventListener("change", ()=>{
-        const id = $("payBillSelect")?.value;
-        if (!id) return resetPayBox();
-        const b = cache.bills.find(x=>x.id===id);
-        if (!b) return resetPayBox();
-        setPayFromBill(b);
-      });
-
-      $("btnConfirmPay")?.addEventListener("click", async ()=>{
-        if (!payingBillId) return;
-        const b = cache.bills.find(x=>x.id===payingBillId);
-        if (!b) return;
-
-        const payDate = $("payDate")?.value || todayISO();
-        const payAmount = Number($("payAmount")?.value);
-        if (!Number.isFinite(payAmount) || payAmount <= 0) return toast("Monto pagado inválido");
-
-        const payment = {
-          id: uid(),
-          bill_id: b.id,
-          bill_name: b.name,
-          pay_date: payDate,
-          amount_paid: Number(payAmount.toFixed(2)),
-          note: ($("payNote")?.value || "").trim() || null,
-          created_at: new Date().toISOString()
-        };
-        await addPayment(payment);
-
-        b.last_paid_date = payDate;
-        b.last_paid_amount = Number(payAmount.toFixed(2));
-        b.next_due_date = computeNextDueAfterPay(b.next_due_date, b.due_day);
-        b.last_notified_date = null;
-        await putBill(b);
-
-        toast(`Pagado. Próximo: ${b.next_due_date}`);
+      if (lastFocusTarget === "pay") {
         resetPayBox();
-        await refresh();
-      });
+        $("amount").focus();
+      }
+    };
 
-      $("btnHistClose")?.addEventListener("click", closeHistory);
-      $("modalBack")?.addEventListener("click", (e)=>{ if (e.target === $("modalBack")) closeHistory(); });
+    // ====== Buttons + settings ======
+    $("remindDays").onchange = async ()=>{
+      const v = Number($("remindDays").value);
+      await setSetting("defaultRemindDays", v);
+      toast("Aviso actualizado");
+      await refresh();
+    };
 
-      $("btnHistCSV")?.addEventListener("click", async ()=>{
-        if (!histBillId) return;
-        const b = cache.bills.find(x=>x.id===histBillId);
-        const pays = await listPaymentsByBill(histBillId);
-        const headers = ["bill","pay_date","amount_paid","note","currency"];
-        const rows = [headers.join(",")];
-        for (const p of pays.slice().reverse()) {
-          rows.push([
-            `"${(b?.name||"").replaceAll('"','""')}"`,
-            p.pay_date,
-            Number(p.amount_paid||0).toFixed(2),
-            `"${(p.note||"").replaceAll('"','""')}"`,
-            cache.currency
-          ].join(","));
-        }
-        downloadFile(`historial_${(b?.name||"bill").replaceAll(" ","_")}.csv`, rows.join("\n"), "text/csv");
-        toast("CSV del historial exportado");
-      });
+    $("filter").onchange = ()=>render();
+    $("search").oninput = ()=>render();
+    $("btnRefresh").onclick = ()=>refresh().then(()=>toast("Actualizado")).catch(()=>toast("Error"));
 
-      // Bill name modal
-      $("btnAddBillName")?.addEventListener("click", ()=>openBillNameModal("form"));
-      $("btnPayAddBill")?.addEventListener("click", ()=>openBillNameModal("pay"));
-      $("btnBillNameClose")?.addEventListener("click", closeBillNameModal);
-      $("billNameModalBack")?.addEventListener("click", (e)=>{ if (e.target === $("billNameModalBack")) closeBillNameModal(); });
+    $("btnNotif").onclick = enableNotifications;
 
-      $("btnBillNameSave")?.addEventListener("click", ()=>{
-        const n = ($("billNameNew")?.value || "").trim();
-        if (!n) { if($("billNameHint")) $("billNameHint").textContent = "Escribe un nombre."; return; }
-        const lib = getNameLibrary();
-        setNameLibrary([...lib, n]);
-        rebuildBillNameCombo(n);
-        if($("billNameHint")) $("billNameHint").textContent = "Guardado ✅";
-        toast("Nombre agregado. Ahora completa monto/vencimiento y guarda el bill.");
-        closeBillNameModal();
-        if (lastFocusTarget === "pay") {
-          resetPayBox();
-          $("amount")?.focus();
-        }
-      });
+    $("btnSchedule").onclick = async ()=>{
+      await enableNotifications();
+      toast("En esta versión Supabase-only: alertas programadas dependen del navegador/PWA.");
+    };
 
-      // Filters/search/refresh
-      $("remindDays")?.addEventListener("change", async ()=>{
-        const v = Number($("remindDays")?.value);
-        setSetting("defaultRemindDays", v);
-        toast("Aviso actualizado");
-        await refresh();
-      });
-      $("filter")?.addEventListener("change", render);
-      $("search")?.addEventListener("input", render);
-      $("btnRefresh")?.addEventListener("click", ()=>refresh().then(()=>toast("Actualizado")).catch(()=>toast("Error")));
+    $("btnInstallTips").onclick = ()=>{
+      toast("Abre en Chrome y elige 'Install app / Add to Home screen'. Luego activa notificaciones.");
+    };
 
-      // Notif buttons
-      $("btnNotif")?.addEventListener("click", enableNotifications);
-      $("btnInstallTips")?.addEventListener("click", ()=>toast("Para notificaciones con app cerrada: instala como PWA (Chrome > Install app)."));
-
-      // Programar alertas (solo mientras abierta en esta versión simple)
-      $("btnSchedule")?.addEventListener("click", async ()=>{
-        await enableNotifications();
-        toast("Listo. La app avisará mientras esté abierta.");
-      });
-    }
-
-    // Expose for table buttons
-    window.beginPay = beginPay;
-    window.beginEdit = beginEdit;
-    window.openHistory = openHistory;
-    window.closeHistory = closeHistory;
-
-    // ======= INIT =======
-    document.addEventListener("DOMContentLoaded", async ()=>{
-      // defaults
-      if (getSetting("currency", null) === null) setSetting("currency","USD");
-      if (getSetting("defaultRemindDays", null) === null) setSetting("defaultRemindDays", 7);
-      if (!Array.isArray(getSetting("billNameLibrary", null))) setSetting("billNameLibrary", []);
+    // ====== Boot ======
+    window.addEventListener("DOMContentLoaded", async ()=>{
+      const cur = await getSetting("currency", null);
+      if (!cur) await setSetting("currency","USD");
+      const rd = await getSetting("defaultRemindDays", null);
+      if (rd === null || rd === undefined) await setSetting("defaultRemindDays", 7);
+      const lib = await getSetting("billNameLibrary", null);
+      if (!Array.isArray(lib)) await setSetting("billNameLibrary", []);
 
       buildDueDayOptions();
-      if($("dueDay")) $("dueDay").value = "1";
-
-      bindEvents();
-      $("payDate") && ($("payDate").value = todayISO());
+      $("dueDay").value = "1";
 
       await verificarConexionSupabase();
       setInterval(verificarConexionSupabase, 15000);
@@ -1044,6 +1053,7 @@
   </script>
 </body>
 </html>
+
 
 
 
